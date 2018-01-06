@@ -1,8 +1,6 @@
 module Meganet
 
 using LinearOperators
-using jInv.Utils
-using jInv.Mesh
 using Base.Test
 
 include("AbstractMeganetElement.jl")
@@ -31,4 +29,5 @@ include("Utils/getConvMatPeriodic.jl")
 include("Utils/testAbstractMeganetElement.jl")
 include("Utils/testLossFunction.jl")
 include("Utils/utilities.jl")
+include("Utils/checkDerivative.jl")
 end

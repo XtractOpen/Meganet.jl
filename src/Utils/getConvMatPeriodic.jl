@@ -1,5 +1,4 @@
 
-using jInv.Mesh
 export getConvMatPeriodic, getAverageMatrix, getCoupledConvMat
 
 function getAverageMatrix(nImg,nc)

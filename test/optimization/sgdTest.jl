@@ -1,6 +1,5 @@
 using Meganet
 using Base.Test
-using jInv.Utils
 
 include("../../src/optimization/sgd.jl")
 
