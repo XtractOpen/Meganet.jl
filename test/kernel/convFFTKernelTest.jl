@@ -4,7 +4,7 @@ using LinearOperators
 
 
 nImg = [8,10]
-sK   = [3,3,2,4]
+sK   = [3,3,4,4]
 
 K = convFFTKernel(nImg,sK)
 

@@ -3,6 +3,10 @@ function numel(Y)
     return length(Y)
 end
 
+import Base.*
+*(op :: AbstractLinearOperator, M :: Array{Float64}) = op.prod(M)
+
+
 function lastOne(n)
     ei = zeros(n)
     ei[end] = 1
@@ -13,7 +17,11 @@ function fft2(Y)
     return fft(fft(Y,1),2)
 end
 
-    
+function ifft2(Y)
+    return ifft(ifft(Y,1),2)
+end
+
+
 function ndgrid_fill(a, v, s, snext)
 	for j = 1:length(a)
 		a[j] = v[div(rem(j-1, snext), s)+1]
