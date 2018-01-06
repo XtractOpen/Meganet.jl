@@ -1,7 +1,7 @@
 export convFFTKernel, getEigs
 
 type convFFTKernel
-    nImg
+    nImg  # image size
     sK
     S
     function convFFTKernel(nImg,sK)
