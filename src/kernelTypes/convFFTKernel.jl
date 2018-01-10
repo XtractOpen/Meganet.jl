@@ -1,6 +1,7 @@
 export convFFTKernel, getEigs
-
-type convFFTKernel
+## For the functions nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta : see abstractConvKernel.jl
+## All convKernel types are assumed to have fields nImage and sK
+type convFFTKernel <: abstractConvKernel
     nImg
     sK
     S
@@ -9,15 +10,6 @@ type convFFTKernel
         return new(nImg,sK,S)
     end
 end
-
-function nImgIn(this::convFFTKernel)
-    return [this.nImg[1], this.nImg[2], this.sK[3]]
- end
-
- function nImgOut(this::convFFTKernel)
-    return [this.nImg[1], this.nImg[2], this.sK[4]]
- end
-
 
 function getEigs(nImg,sK)
     S = zeros(Complex128,prod(nImg),prod(sK[1:2]));
@@ -134,15 +126,4 @@ function initTheta(this::convFFTKernel)
     #theta(id2(:)) = randn(numel(id2),1);
     #theta = max(min(2*sd, theta),-2*sd);
     return theta
-end
-
-function nFeatIn(this::convFFTKernel)
-    return prod(nImgIn(this));
-end
-function nFeatOut(this::convFFTKernel)
-    return prod(nImgOut(this));
-end
-
-function nTheta(this)
-    return prod(this.sK);
 end

@@ -12,7 +12,9 @@ include("integrators/connector.jl")
 include("integrators/ResNN.jl")
 include("kernelTypes/denseKernel.jl")
 include("kernelTypes/sparseKernel.jl")
-include("kernelTypes/convFFTKernel.jl")
+include("kernelTypes/abstractConvKernel.jl");
+include("kernelTypes/convFFTKernel.jl");
+
 
 include("layers/affineScalingLayer.jl")
 include("layers/normLayer.jl")
