@@ -45,13 +45,14 @@ function Amv(this::convFFTKernel,theta,Y)
     Sk = zeros(Complex128,tuple(nImgOut(this)...))
     T  = zeros(Complex128,tuple(nImgOut(this)...))
     nn = nImgOut(this); nn[3] = 1;
-    sumT = zeros(Complex128,tuple(nn...))
+    sumT = zeros(Complex128,tuple([nn;nex]...))
     ####
        
     for k=1:this.sK[4]
         Sk = reshape(this.S*theta[:,:,k],tuple(nImgIn(this)...));
-        T  = Sk .* Yh;
-        sumT = sum(T,3)
+        #T  = Sk .* Yh;
+        #sumT = sum(T,3)
+        sumT = hadamardSum(sumT,Yh,Sk)
         AY[:,:,k,:]  = sumT[:,:,1,:];
     end
     AY = real(fft2(AY));
@@ -72,8 +73,9 @@ function ATmv(this::convFFTKernel,theta,Z)
         #    tk = reshape(tk,1,:);
         #end
         Sk = reshape(this.S*tk,tuple(nImgOut(this)...));
-        T  = Sk.*Yh;
-        sumT = sum(T,3)
+        #T  = Sk.*Yh;
+        #sumT = sum(T,3)
+        sumT = hadamardSum(sumT,Yh,Sk)
         ATY[:,:,k] = sumT[:,:,1];
     end
     ATY = real(ifft2(ATY));
@@ -146,3 +148,19 @@ end
 function nTheta(this)
     return prod(this.sK);
 end
+
+function hadamardSum(sumT::Array{Complex128},Yh::Array{Complex128},Sk::Array{Complex128})
+    sumT .= Complex(0.0)
+    for i4 = 1:size(Yh,4)
+        for i3 = 1:size(Yh,3)
+            for i2 = 1:size(Yh,2)
+                for i1 = 1:size(Yh,1)
+                    @inbounds tt = Sk[i1,i2,i3]
+                    @inbounds sumT[i1,i2,1,i4] += tt * Yh[i1,i2,i3,i4]
+                end
+            end
+        end
+    end        
+    return sumT
+end
+
