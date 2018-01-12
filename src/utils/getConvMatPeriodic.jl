@@ -59,7 +59,7 @@ for i=1:size(K,1)
             t3[t3.>n[3]] -= n[3]
 
             jj = [jj; vec(G)];
-            ii = [ii; vec(G[sub2ind(n,t1, t2,t3)])];
+            ii = [ii; vec(G[sub2ind(tuple(n...),t1, t2,t3)])];
             vv = [vv; ones(prod(n))*K[i,j,k]];
         end
     end
