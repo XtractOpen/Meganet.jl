@@ -1,5 +1,5 @@
 export convFFTKernel, getEigs
-## For the functions nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta : see abstractConvKernel.jl
+## For the functions nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta : see abstractConvKernel.jl
 ## All convKernel types are assumed to have fields nImage and sK
 type convFFTKernel <: abstractConvKernel
     nImg
@@ -100,30 +100,4 @@ function JthetaTmv(this::convFFTKernel,Z,dummy,Y)
 
     dtheta = reshape(dth1,tuple(this.sK...));
     return dtheta
-end
-
-
-function getOp(this::convFFTKernel,theta)
-
-    m = prod(nImgOut(this))
-    n = prod(nImgIn(this))
-
-    A = LinearOperator(m,n,false,false,
-                        v -> Amv(this,theta,v),
-                        Nullable{Function}(),
-                        w -> ATmv(this,theta,w))
-    return A
-end
-
-function initTheta(this::convFFTKernel)
-
-    sd    = 0.1;
-    theta = sd*randn(prod(this.sK));
-    #id1 = find(theta>2*sd);
-    #theta(id1[:]) = randn(numel(id1),1);
-
-    #id2 = find(theta< -2*sd);
-    #theta(id2(:)) = randn(numel(id2),1);
-    #theta = max(min(2*sd, theta),-2*sd);
-    return theta
 end

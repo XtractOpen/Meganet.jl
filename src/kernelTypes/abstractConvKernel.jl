@@ -1,4 +1,4 @@
-export nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta
+export nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta
 
 abstract type abstractConvKernel end
 
@@ -21,4 +21,30 @@ end
 
 function nTheta(this::abstractConvKernel)
    return prod(this.sK);
+end
+
+
+function getOp(this::abstractConvKernel,theta)
+
+    m = prod(nImgOut(this))
+    n = prod(nImgIn(this))
+
+    A = LinearOperator(m,n,false,false,
+                        v -> Amv(this,theta,v),
+                        Nullable{Function}(),
+                        w -> ATmv(this,theta,w))
+    return A
+end
+
+function initTheta(this::abstractConvKernel)
+
+    sd    = 0.1;
+    theta = sd*randn(prod(this.sK));
+    #id1 = find(theta>2*sd);
+    #theta(id1[:]) = randn(numel(id1),1);
+
+    #id2 = find(theta< -2*sd);
+    #theta(id2(:)) = randn(numel(id2),1);
+    #theta = max(min(2*sd, theta),-2*sd);
+    return theta
 end
