@@ -1,7 +1,14 @@
 export convFFTKernel, getEigs
+<<<<<<< HEAD
 
 type convFFTKernel
     nImg  # image size
+=======
+## For the functions nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta : see abstractConvKernel.jl
+## All convKernel types are assumed to have fields nImage and sK
+type convFFTKernel <: abstractConvKernel
+    nImg
+>>>>>>> master
     sK
     S
     function convFFTKernel(nImg,sK)
@@ -9,15 +16,6 @@ type convFFTKernel
         return new(nImg,sK,S)
     end
 end
-
-function nImgIn(this::convFFTKernel)
-    return [this.nImg[1], this.nImg[2], this.sK[3]]
- end
-
- function nImgOut(this::convFFTKernel)
-    return [this.nImg[1], this.nImg[2], this.sK[4]]
- end
-
 
 function getEigs(nImg,sK)
     S = zeros(Complex128,prod(nImg),prod(sK[1:2]));
@@ -111,6 +109,7 @@ function JthetaTmv(this::convFFTKernel,Z,dummy,Y)
     dtheta = reshape(dth1,tuple(this.sK...));
     return dtheta
 end
+<<<<<<< HEAD
 
 
 function getOp(this::convFFTKernel,theta)
@@ -164,3 +163,5 @@ function hadamardSum(sumT::Array{Complex128},Yh::Array{Complex128},Sk::Array{Com
     return sumT
 end
 
+=======
+>>>>>>> master
