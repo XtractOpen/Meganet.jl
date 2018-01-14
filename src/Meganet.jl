@@ -14,6 +14,7 @@ include("kernelTypes/denseKernel.jl")
 include("kernelTypes/sparseKernel.jl")
 include("kernelTypes/abstractConvKernel.jl");
 include("kernelTypes/convFFTKernel.jl");
+include("kernelTypes/convGEMMKernel.jl");
 
 
 include("layers/affineScalingLayer.jl")
