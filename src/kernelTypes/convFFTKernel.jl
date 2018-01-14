@@ -62,6 +62,7 @@ function ATmv(this::convFFTKernel,theta,Z)
     #T  = zeros(Complex128,tuple(nImgOut(this)...))
     nn = nImgOut(this); nn[3] = 1;
     sumT = zeros(Complex128,tuple([nn;nex]...))
+    st   = zeros(Complex128,size(this.S,1))
     ####
     
     Yh = fft2(reshape(Z,tuple([nImgOut(this); nex]...)));
@@ -70,7 +71,8 @@ function ATmv(this::convFFTKernel,theta,Z)
         #if size(this.S,2) == 1
         #    tk = reshape(tk,1,:);
         #end
-        Sk = reshape(this.S*tk,tuple(nImgOut(this)...));
+        A_mul_B!(st,this.S,tk)
+        Sk = reshape(st,tuple(nImgOut(this)...));
         #T  = Sk.*Yh;
         #sumT = sum(T,3)
         sumT = hadamardSum(sumT,Yh,Sk)
