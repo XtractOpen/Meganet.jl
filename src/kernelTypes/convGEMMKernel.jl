@@ -20,7 +20,7 @@ function Amv(this::convGEMMKernel,theta,Y)
 	KK = Array{Array{eltype(theta),2}}(sK[1],sK[2]);
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
-			KK[k1,k2] = K[k1,k2,:,:]';
+			@inbounds KK[k1,k2] = K[k1,k2,:,:]';
 		end
 	end
 	shiftX = [0;-1;0;0;1;0];
@@ -28,7 +28,7 @@ function Amv(this::convGEMMKernel,theta,Y)
 	
     for k = 1:nex
 		AYk = multConv2Dblock(Y,KK, AYk,T,shiftX,shiftT,k);
-		AY[:,:,k] = AYk;
+		@inbounds AY[:,:,k] = AYk;
 		AYk[:] = 0.0;
 	end
     AY = reshape(AY,:,nex);
@@ -49,7 +49,7 @@ function ATmv(this::convGEMMKernel,theta,Z)
 	KK = Array{Array{eltype(theta),2}}(sK[1],sK[2]);
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
-			KK[k1,k2] = K[k1,k2,:,:];
+			@inbounds KK[k1,k2] = K[k1,k2,:,:];
 		end
 	end
 	## flipping:
@@ -58,7 +58,7 @@ function ATmv(this::convGEMMKernel,theta,Z)
 	shiftT = [1;0;0;0;0;-1];
     for k = 1:nex
 		ATZk = multConv2Dblock(Z,KK, ATZk,T,shiftX,shiftT,k);
-		ATZ[:,:,k] = ATZk;
+		@inbounds ATZ[:,:,k] = ATZk;
 		ATZk[:] = 0.0;
 	end
     ATZ = reshape(ATZ,:,nex);
@@ -86,7 +86,7 @@ function JthetaTmv(this::convGEMMKernel,Z,dummy,Y)
 	KK = Array{Array{eltype(dtheta),2}}(sK[1],sK[2]);
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
-			KK[k1,k2] = zeros(eltype(Y),sK[3],sK[4]);
+			@inbounds KK[k1,k2] = zeros(eltype(Y),sK[3],sK[4]);
 		end
 	end
 	shiftX = [0;-1;0;0;1;0];
@@ -98,7 +98,7 @@ function JthetaTmv(this::convGEMMKernel,Z,dummy,Y)
 	### Assemble the kernels from gemm!:
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
-			dtheta[k1,k2,:,:] = KK[k1,k2];
+			@inbounds dtheta[k1,k2,:,:] = KK[k1,k2];
 		end
 	end
     dtheta = reshape(dtheta,tuple(this.sK...));
@@ -138,25 +138,25 @@ for p = 1:2:2*kernelWidth
 			jx = 1+shiftX[p];
 			jt = 1+shiftT[p];
 			if jt > 1
-				t[:,1:(jt-1),cc] = 0.0;
+				@inbounds t[:,1:(jt-1),cc] = 0.0;
 			end
 			while jt < nImg2+shiftT[p+1]
 				it = 1+shiftT[q];
 				ix = 1+shiftX[q];
 				if it > 1
-					t[1:(it-1),jt,cc] = 0.0;
+					@inbounds t[1:(it-1),jt,cc] = 0.0;
 				end
 				while it < nImg1+shiftT[q+1]
-					t[it,jt,cc] = x[ix,jx,cc,imIdx];
+					@inbounds t[it,jt,cc] = x[ix,jx,cc,imIdx];
 					it+=1;ix+=1;
 				end
 				if it <= nImg1
-					t[it:nImg1,jt,cc] = 0.0;
+					@inbounds t[it:nImg1,jt,cc] = 0.0;
 				end
 				jt+=1;jx+=1;	
 			end
 			if jt <= nImg2
-				t[:,jt:nImg2,cc] = 0.0;
+				@inbounds t[:,jt:nImg2,cc] = 0.0;
 			end
 		end
 		t = reshape(t,nImg1*nImg2,cin);
