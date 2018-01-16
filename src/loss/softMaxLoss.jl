@@ -1,26 +1,31 @@
-export SoftmaxLoss, getLabels, getMisfit
+export SoftmaxLoss, getSoftMaxLoss, getLabels, getMisfit
 
 """
 sofmax loss function
 """
-type SoftmaxLoss
-    shift
-    theta
-    addBias
-    SoftmaxLoss(shift=0.0, theta=1e-3, addBias=true) = new(shift,theta,addBias)
+type SoftmaxLoss{T}
+    shift :: T
+    theta :: T
+    addBias::Bool
 end
+
+
+function getSoftMaxLoss(TYPE::Type,shift=zero(TYPE), theta=convert(TYPE,1e-3), addBias=true)
+	return SoftmaxLoss{TYPE}(shift,theta,addBias);
+end
+
 
 import Base.display
 display(this::SoftmaxLoss) = println("SoftmaxLoss(shift$(this.shift),theta=$(this.theta),addBias=$(this.addBias))")
 
-function getMisfit(this::SoftmaxLoss,W,Y,C,doDY=true,doDW=true)
+function getMisfit{T}(this::SoftmaxLoss{T},W::Array{T},Y::Array{T},C::Array{T},doDY=true,doDW=true)
 
-    dWF = zeros(0); d2WF = zeros(0); dYF =zeros(0); d2YF = zeros(0)
+    dWF = zeros(T,0); d2WF = zeros(T,0); dYF =zeros(T,0); d2YF = zeros(T,0)
 
     szY  = size(Y)
     nex  = szY[2]
     if this.addBias
-        Y   = [Y; ones(1,nex)]
+        Y   = [Y; ones(T,1,nex)]
     else
         Y   = copy(Y)  # make sure we don't overwrite features
     end
@@ -28,7 +33,7 @@ function getMisfit(this::SoftmaxLoss,W,Y,C,doDY=true,doDW=true)
     szW  = [size(C,1),size(Y,1)]
 
     W   = reshape(W,tuple(szW...))
-    Y   -= this.shift
+    Y   -= this.shift;
 
     S   = exp.(W*Y)
 
@@ -65,7 +70,7 @@ function getMisfit(this::SoftmaxLoss,W,Y,C,doDY=true,doDW=true)
     return F, para, dWF, d2WF, dYF, d2YF
 end
 
-function getLabels(this::SoftmaxLoss,W,Y=nothing)
+function getLabels{T}(this::SoftmaxLoss,W::Array{T},Y=nothing)
     if Y==nothing
         S = W
         nex = size(S,2)
@@ -79,7 +84,7 @@ function getLabels(this::SoftmaxLoss,W,Y=nothing)
         S      = exp.(W*Y)
     end
     P      = S./sum(S,1)
-    Cp     = zeros(size(P))
+    Cp     = zeros(T,size(P))
     for i=1:size(P,2)
         Cp[indmax(P[:,i]),i] = 1
     end

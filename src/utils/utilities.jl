@@ -4,7 +4,7 @@ function numel(Y)
 end
 
 import Base.*
-*(op :: AbstractLinearOperator, M :: Array{Float64}) = op.prod(M)
+*{T}(op :: AbstractLinearOperator{T}, M :: Array{T,2}) = op.prod(M)
 
 
 function lastOne(n)

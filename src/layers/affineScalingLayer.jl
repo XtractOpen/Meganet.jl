@@ -7,11 +7,11 @@ useful, e.g., in batch normalization.
 kron(s3,kron(s2,s1)) * vec(Y) + kron(b3,kron(e2,e1)) +
 kron(e3,kron(b2,e1)) + kron(e3,kron(e2,b1));
 """
-type AffineScalingLayer <: AbstractMeganetElement
+type AffineScalingLayer{T} <: AbstractMeganetElement{T}
     nData       # describe size of data, at least first two dim must be correct.
 end
 
-function splitWeights(this::AffineScalingLayer,theta)
+function splitWeights{T}(this::AffineScalingLayer{T},theta::Array{T})
     theta = reshape(theta,:,2)
     s2    = theta[:,1]
     b2    = theta[:,2]
@@ -25,7 +25,7 @@ function scaleChannels(Y,s,b)
     return Y
 end
 
-function apply(this::AffineScalingLayer,theta,Y,doDerivative=false)
+function apply{T}(this::AffineScalingLayer{T},theta::Array{T},Y::Array{T},doDerivative=false)
 
     Y   = reshape(Y,this.nData[1], this.nData[2],:)
     dA  = []
@@ -41,28 +41,28 @@ function apply(this::AffineScalingLayer,theta,Y,doDerivative=false)
 end
 
 
-function nTheta(this::AffineScalingLayer)
+function nTheta{T}(this::AffineScalingLayer{T})
     return 2*this.nData[2]
 end
 
-function nFeatIn(this::AffineScalingLayer)
+function nFeatIn{T}(this::AffineScalingLayer{T})
     return prod(this.nData[1:2])
 end
 
-function nFeatOut(this::AffineScalingLayer)
+function nFeatOut{T}(this::AffineScalingLayer{T})
    return prod(this.nData[1:2])
 end
 
-function nDataOut(this::AffineScalingLayer)
+function nDataOut{T}(this::AffineScalingLayer{T})
     return nFeatOut(this);
 end
 
-function initTheta(this::AffineScalingLayer)
-    s2,b2 = splitWeights(this,ones(nTheta(this)))
+function initTheta{T}(this::AffineScalingLayer{T})
+    s2,b2 = splitWeights(this,ones(T,nTheta(this)))
     return  [s2[:]; 0*b2[:]]
 end
 
-function Jthetamv(this::AffineScalingLayer,dtheta,theta,Y,tmp=nothing)
+function Jthetamv{T}(this::AffineScalingLayer{T},dtheta::Array{T},theta::Array{T},Y::Array{T},tmp=nothing)
 
     Y   = reshape(copy(Y),this.nData[1], this.nData[2],:)
     nex = size(Y,3)
@@ -75,7 +75,7 @@ function Jthetamv(this::AffineScalingLayer,dtheta,theta,Y,tmp=nothing)
     return dYdata, dY
 end
 
-function JthetaTmv(this::AffineScalingLayer,Z,dummy,theta,Y,tmp=nothing)
+function JthetaTmv{T}(this::AffineScalingLayer{T},Z::Array{T},dummy,theta::Array{T},Y::Array{T},tmp=nothing)
     Y   = reshape(Y,this.nData[1], this.nData[2],:)
     Z   = reshape(Z,this.nData[1], this.nData[2],:)
 
@@ -85,7 +85,7 @@ function JthetaTmv(this::AffineScalingLayer,Z,dummy,theta,Y,tmp=nothing)
     return  [dtheta; vec(sum(sum(Z,1),3))]
 end
 
-function JYmv(this::AffineScalingLayer,dY,theta,Y,tmp=nothing)
+function JYmv{T}(this::AffineScalingLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp=nothing)
 
     dY   = reshape(copy(dY),this.nData[1], this.nData[2],:);
     nex = size(dY,3)
@@ -98,7 +98,7 @@ function JYmv(this::AffineScalingLayer,dY,theta,Y,tmp=nothing)
     return dYdata, dY
 end
 
-function JYTmv(this::AffineScalingLayer,Z,dummy,theta,Y,tmp=nothing)
+function JYTmv{T}(this::AffineScalingLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp=nothing)
 
     Z   = reshape(copy(Z),this.nData[1], this.nData[2],:)
     nex = size(Z,3)

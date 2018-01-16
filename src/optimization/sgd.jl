@@ -1,40 +1,43 @@
-export SGD, solve
+export SGD, solve,getSGDsolver
 
 """
 Stochastic Gradient Descent
 """
-type SGD
+type SGD{T}
     maxEpochs::Int
     miniBatch::Int
     out::Bool
-    learningRate
-    momentum::Real
+    learningRate::T
+    momentum::T
     nesterov::Bool
 	ADAM::Bool
-    function SGD(;maxEpochs=10,miniBatch=16,out=true,learningRate=0.1,momentum=0.9,nesterov=false,ADAM=false)
-        if ADAM && nesterov
-            warn("sgd(): ADAM and nestrov together - choosing ADAM");
-            nesterov  = false;
-        end
-        new(maxEpochs,miniBatch,out,learningRate,momentum, nesterov, ADAM)
-    end
 end
+
+function getSGDsolver(TYPE::Type ;maxEpochs=10,miniBatch=16,out=true,learningRate=0.1,momentum=0.9,nesterov=false,ADAM=false)
+	if ADAM && nesterov
+		warn("sgd(): ADAM and nestrov together - choosing ADAM");
+		nesterov  = false;	
+	end
+	return SGD{TYPE}(maxEpochs,miniBatch,out,convert(TYPE,learningRate),convert(TYPE,momentum), nesterov, ADAM)
+end
+
+
 
 Base.display(this::SGD)=println("SGD(maxEpochs=$(this.maxEpochs),miniBatch=$(this.miniBatch),learningRate=$(this.learningRate),momentum=$(this.momentum),nesterov=$(this.nesterov),ADAM=$(this.ADAM))")
 
-function solve(this,objFun::dnnObjFctn,xc,Y,C,Yv,Cv)
+function solve{T}(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array{T},Yv::Array{T},Cv::Array{T})
 
     # evaluate training and validation
     epoch = 1;
     xOld = copy(xc);
-    dJ = 0*xc
-    mJ = 0*xc
-    vJ = 0*xc
+    dJ = zeros(T,size(xc));
+    mJ = zeros(T,size(xc));
+    vJ = zeros(T,size(xc));
     if this.ADAM
-        mJ = 0*xc
-        vJ = 0*xc
+        mJ = zeros(T,size(xc));
+        vJ = zeros(T,size(xc));
     end
-    beta2 = 0.999;
+    beta2 = convert(T,0.999);
     beta1 = this.momentum;
 
     lr    = this.learningRate
@@ -45,8 +48,8 @@ function solve(this,objFun::dnnObjFctn,xc,Y,C,Yv,Cv)
     while epoch <= this.maxEpochs
         nex = size(Y,2)
         ids = randperm(nex)
-
-        for k=1:Int(ceil(nex/this.miniBatch))
+		
+        for k=1:ceil(Int64,nex/this.miniBatch)
             idk = ids[(k-1)*this.miniBatch+1: min(k*this.miniBatch,nex)]
             if this.nesterov && !this.ADAM
                 Jk,dummy,dJk = evalObjFctn(objFun,xc-this.momentum*dJ,Y[:,idk],C[:,idk]);
@@ -55,8 +58,8 @@ function solve(this,objFun::dnnObjFctn,xc,Y,C,Yv,Cv)
             end
 
             if this.ADAM
-               mJ = beta1*mJ + (1-beta1)*(dJk)
-               vJ = beta2*vJ + (1-beta2)*(dJk.^2)
+               mJ = beta1*mJ + (one(T)-beta1)*(dJk)
+               vJ = beta2*vJ + (one(T)-beta2)*(dJk.^2)
 #              dJ = lr*((mJ./(1-beta1^(epoch)))./sqrt.((vJ./(1-beta2^(epoch)))+1e-8))
             else
                dJ = lr*dJk + this.momentum*dJ

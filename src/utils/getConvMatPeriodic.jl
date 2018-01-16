@@ -1,16 +1,16 @@
 
 export getConvMatPeriodic, getAverageMatrix, getCoupledConvMat
 
-function getAverageMatrix(nImg,nc)
+function getAverageMatrix(TYPE::Type,nImg,nc)
 
-    A1 = spdiagm((fill(.5,nImg[1]),fill(.5,nImg[1]-1)),(0,1),nImg[1],nImg[1])
+    A1 = spdiagm((fill(convert(TYPE,.5),nImg[1]),fill(convert(TYPE,.5),nImg[1]-1)),(0,1),nImg[1],nImg[1])
     A1 = A1[1:2:end,:]
-    A2 = spdiagm((fill(.5,nImg[2]),fill(.5,nImg[2]-1)),(0,1),nImg[2],nImg[2])
+    A2 = spdiagm((fill(convert(TYPE,.5),nImg[2]),fill(convert(TYPE,.5),nImg[2]-1)),(0,1),nImg[2],nImg[2])
     A2 = A2[1:2:end,:]
     Av    = kron(A2,A1);
-    return kron(speye(nc),Av);
+    return kron(speye(TYPE,nc),Av);
 end
-function getCoupledConvMat(K,nImg,sK;stride=[1;1])
+function getCoupledConvMat(TYPE::Type,K::Array,nImg,sK;stride=[1;1])
     # build single 2D convolution operator
     nK  = prod(sK[1:2])
     K   = reshape(K,tuple(sK...)) # basic kernel
@@ -22,22 +22,22 @@ function getCoupledConvMat(K,nImg,sK;stride=[1;1])
     idx[1:stride[1]:end,:] = true
     idx[:,1:stride[2]:end] = true
 
-    A = spzeros(0,prod(nImg[1:2])*sK[3])
+    A = spzeros(TYPE,0,prod(nImg[1:2])*sK[3])
     for i=1:sK[4]
-        Ak = spzeros(prod(nImg[1:2]),0)
+        Ak = spzeros(TYPE,prod(nImg[1:2]),0)
         for j=1:sK[3]
-            Ak = [Ak getConvMatPeriodic(K[:,:,j,i],[nImg[1:2]; 1])]
+            Ak = [Ak getConvMatPeriodic(TYPE,K[:,:,j,i],[nImg[1:2]; 1])]
         end
         A = [A; Ak[vec(idx).==true,:]]
     end
     return A
 end
 
-function getConvMatPeriodic{T<:AbstractFloat}(K::Array{T},n::Array{Int64})
+function getConvMatPeriodic(TYPE::Type,K::Array,n::Array{Int64})
 
 G  = reshape(collect(1:prod(n)),tuple(n...))
 
-jj = zeros(Int64,0); ii = zeros(Int64,0); vv = zeros(0);
+jj = zeros(Int64,0); ii = zeros(Int64,0); vv = zeros(TYPE,0);
 I1,I2,I3 = ndgrid(1:n[1],1:n[2],1:n[3]);
 for i=1:size(K,1)
     for j=1:size(K,2)
@@ -64,6 +64,6 @@ for i=1:size(K,1)
         end
     end
 end
-A = sparse(ii, jj ,vv,prod(n),prod(n));
+A = convert(SparseMatrixCSC{TYPE},sparse(ii, jj ,vv,prod(n),prod(n)));
 return A
 end

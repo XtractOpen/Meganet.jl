@@ -1,26 +1,29 @@
-export NN
+export NN,getNN,initTheta
 
 """
 NN Neural Network block
 
  Y_k+1 = layer{k}(theta{k},Y_k)
 """
-type NN <: AbstractMeganetElement
+type NN{T} <: AbstractMeganetElement{T}
     layers  # layers of Neural Network, cell array
     outTimes
     Q
-    function NN(layers::Array,outTimes=eye(Int,length(layers))[:,end],Q=I)
-        nt   = length(layers)
-        nout = nFeatOut(layers[1])
-        for k=2:nt
-            if nFeatIn(layers[k]) != nout
-                error("Dim. of input features of block $k does not match dim. of output features of block $(k-1)");
-            end
-            nout = nFeatOut(layers[k])
-        end
-        new(layers,outTimes,Q)
-    end
 end
+
+function getNN{T}(layers::Array{AbstractMeganetElement{T}},outTimes=eye(Int,length(layers))[:,end],Q=I)
+	nt   = length(layers)
+    nout = nFeatOut(layers[1])
+
+    for k=2:nt
+        if nFeatIn(layers[k]) != nout
+            error("Dim. of input features of block $k does not match dim. of output features of block $(k-1)");
+        end
+        nout = nFeatOut(layers[k])
+    end
+	return NN{T}(layers,outTimes,Q);
+end
+
 
 import Base.display
 function display(this::NN)
@@ -32,34 +35,34 @@ function display(this::NN)
 end
 
 # ---------- counting thetas, input and output features -----
-function nTheta(this::NN)
+function nTheta{T}(this::NN{T})
     n = 0;
     for k=1:length(this.layers)
         n = n + nTheta(this.layers[k]);
     end
     return n
 end
-nFeatIn(this::NN)  = nFeatIn(this.layers[1])
-nFeatOut(this::NN) = nFeatOut(this.layers[end])
+nFeatIn{T}(this::NN{T})  = nFeatIn(this.layers[1])
+nFeatOut{T}(this::NN{T}) = nFeatOut(this.layers[end])
 
-function nDataOut(this::NN)
+function nDataOut{T}(this::NN{T})
     n=0;
     for k=1:length(this.layers)
         n = n+this.outTimes[k]* nFeatOut(this.layers[k]);
     end
 end
 
-function initTheta(this::NN)
-    theta = zeros(0)
+function initTheta{T}(this::NN{T})
+    theta = zeros(T,0)
     for k=1:length(this.layers)
         theta = [theta; vec(initTheta(this.layers[k]))]
     end
-    return theta
+    return convert(Array{T},theta)
 end
 
 
 # --------- forward problem ----------
-function apply(this::NN,theta,Y0,doDerivative=true)
+function apply{T}(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true)
 
     Y  = copy(Y0)
     nex = div(length(Y),nFeatIn(this))
@@ -70,7 +73,7 @@ function apply(this::NN,theta,Y0,doDerivative=true)
         tmp[1,1] = Y0
     end
 
-    Ydata = zeros(0,nex)
+    Ydata = zeros(T,0,nex)
     cnt = 0
     for i=1:nt
         ni = nTheta(this.layers[i])
@@ -87,11 +90,11 @@ function apply(this::NN,theta,Y0,doDerivative=true)
 end
 
 # -------- Jacobian matvecs --------
-function JYmv(this::NN,dY,theta,Y,tmp)
+function JYmv{T}(this::NN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)
     nex = div(length(Y),nFeatIn(this))
     nt = length(this.layers)
     cnt = 0
-    dYdata = zeros(0,nex)
+    dYdata = zeros(T,0,nex)
     for i=1:nt
         ni = nTheta(this.layers[i])
         dY = JYmv(this.layers[i],dY,theta[cnt+(1:ni)],tmp[i,1],tmp[i,2])[2]
@@ -103,14 +106,14 @@ function JYmv(this::NN,dY,theta,Y,tmp)
     return dYdata, dY
 end
 
-function  Jmv(this::NN,dtheta,dY,theta,Y,tmp)
+function  Jmv{T}(this::NN,dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)
     nex = div(length(Y),nFeatIn(this))
     nt = length(this.layers);
     if isempty(dY)
         dY = 0*Y
     end
 
-    dYdata = zeros(0,nex)
+    dYdata = zeros(T,0,nex)
     cnt = 0
     for i=1:nt
         ni = nTheta(this.layers[i])
@@ -125,7 +128,7 @@ function  Jmv(this::NN,dtheta,dY,theta,Y,tmp)
 end
 
 # -------- Jacobian' matvecs --------
-function JYTmv(this,Wdata,W,theta,Y,tmp)
+function JYTmv{T}(this,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp)
 
     nex = div(length(Y),nFeatIn(this));
     if !isempty(Wdata)
@@ -153,15 +156,21 @@ function JYTmv(this,Wdata,W,theta,Y,tmp)
     return W
 end
 
-function JTmv(this::NN,Wdata,W,theta,Y,tmp)
 
+function JthetaTmv{T}(this::NN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp)
+	return JTmv(this,Wdata,W,theta,Y,tmp)[1];
+end
+
+
+
+function JTmv{T}(this::NN,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp)
     nex = div(length(Y),nFeatIn(this))
 
-    if !isempty(Wdata)
+    if size(Wdata,1)>0
         Wdata = reshape(Wdata,:,nex)
     end
-    if isempty(W)
-        W = zeros(nFeatOut(this),nex)
+    if length(W)==0
+        W = zeros(T,nFeatOut(this),nex)
     elseif length(W)>1
         W     = reshape(W,:,nex)
     end
@@ -177,8 +186,8 @@ function JTmv(this::NN,Wdata,W,theta,Y,tmp)
             cnt2 = cnt2 + nn
         end
         ni     = nTheta(this.layers[i])
-        dmbi,W = JTmv(this.layers[i],W,[],theta[end-cnt-ni+1:end-cnt],
-                     tmp[i,1],tmp[i,2])
+
+        dmbi,W = JTmv(this.layers[i],W,zeros(T,0),theta[end-cnt-ni+1:end-cnt],tmp[i,1],tmp[i,2])
         dtheta[end-cnt-ni+1:end-cnt]  = dmbi
         cnt = cnt+ni
     end

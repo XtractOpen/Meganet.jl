@@ -1,38 +1,40 @@
-export ResNN
+export ResNN,getResNN
 
 """
 Residual Neural Network block
 
 Y_k+1 = Y_k + h*layer{k}(theta{k},Y_k)
 """
-type ResNN <: AbstractMeganetElement
+type ResNN{T} <: AbstractMeganetElement{T}
     layer
     nt
     h
     outTimes
     Q
-    function ResNN(layer,nt,h=1.0,outTimes=eye(Int,nt)[:,nt],Q=I)
-        if nFeatIn(layer)!=nFeatOut(layer)
+end
+
+function getResNN(TYPE::Type,layer,nt,h=one(TYPE),outTimes=eye(Int,nt)[:,nt],Q=I)
+	h = convert(TYPE,h);
+	if nFeatIn(layer)!=nFeatOut(layer)
             error("ResNN layer must be square!")
-        end
-         new(layer,nt,h,outTimes,Q)
-     end
+       end
+    return ResNN{TYPE}(layer,nt,h,outTimes,Q)
 end
 
 
-function nTheta(this::ResNN)
+function nTheta{T}(this::ResNN{T})
     return this.nt*nTheta(this.layer);
 end
 
-function nFeatIn(this::ResNN)
+function nFeatIn{T}(this::ResNN{T})
     return nFeatIn(this.layer);
 end
 
-function nFeatOut(this::ResNN)
+function nFeatOut{T}(this::ResNN{T})
     return nFeatOut(this.layer);
 end
 
-function nDataOut(this::ResNN)
+function nDataOut{T}(this::ResNN{T})
     if length(this.Q)==1
         n = sum(this.outTimes)*nFeatOut(this.layer)
     else
@@ -41,16 +43,15 @@ function nDataOut(this::ResNN)
     return n
 end
 
-function initTheta(this::ResNN)
+function initTheta{T}(this::ResNN{T})
     return repmat(vec(initTheta(this.layer)),this.nt,1)
 end
 
 # ------- apply forward problems -----------
-function  apply(this::ResNN,theta,Y0,doDerivative=true)
+function  apply{T}(this::ResNN{T},theta::Array{T},Y0::Array{T},doDerivative=true)
 
     nex = div(length(Y0),nFeatIn(this))
     Y   = reshape(Y0,:,nex)
-
     tmp = Array{Any}(this.nt+1,2)
     if doDerivative
         tmp[1,1] = Y0
@@ -58,7 +59,7 @@ function  apply(this::ResNN,theta,Y0,doDerivative=true)
 
     theta = reshape(theta,:,this.nt)
 
-    Ydata = zeros(0,nex)
+    Ydata = zeros(T,0,nex)
     for i=1:this.nt
         Z,dummy,tmp[i,2] = apply(this.layer,theta[:,i],Y,doDerivative)
         Y +=  this.h * Z
@@ -73,14 +74,14 @@ function  apply(this::ResNN,theta,Y0,doDerivative=true)
 end
 
 # -------- Jacobian matvecs ---------------
-function JYmv(this::ResNN,dY,theta,Y,tmp)
+function JYmv{T}(this::ResNN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)
     # if isempty(dY)
     #     dY = 0.0;
     # elseif length(dY)>1
         nex = div(length(dY),nFeatIn(this))
         dY   = reshape(dY,:,nex)
     # end
-    dYdata = zeros(0,nex);
+    dYdata = zeros(T,0,nex);
     theta  = reshape(theta,:,this.nt);
     for i=1:this.nt
         dY += this.h* JYmv(this.layer,dY,theta[:,i],tmp[i,1],tmp[i,2])[2];
@@ -92,15 +93,15 @@ function JYmv(this::ResNN,dY,theta,Y,tmp)
 end
 
 
-function  Jmv(this::ResNN,dtheta,dY,theta,Y,tmp)
+function  Jmv{T}(this::ResNN{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)
     nex = div(length(Y),nFeatIn(this))
-    if isempty(dY)
-         dY = 0.0*Y
+    if length(dY)==0
+         dY = zeros(T,size(Y))
      elseif length(dY)>1
         dY   = reshape(dY,:,nex)
     end
 
-    dYdata = zeros(0,nex)
+    dYdata = zeros(T,0,nex)
     theta  = reshape(theta,:,this.nt)
     dtheta = reshape(dtheta,:,this.nt)
     for i=1:this.nt
@@ -114,14 +115,14 @@ end
 
 # -------- Jacobian transpose matvecs ----------------
 
-function JYTmv(this::ResNN,Wdata,W,theta,Y,tmp)
+function JYTmv{T}(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp)
 
     nex = div(length(Y),nFeatIn(this))
-    if !isempty(Wdata)
+    if length(Wdata)>0
         Wdata = reshape(Wdata,:,sum(this.outTimes),nex)
     end
-    if isempty(W)
-        W = 0.0
+    if length(W)==0
+        W = zero(T)
     else
         W     = reshape(W,:,nex)
     end
@@ -133,21 +134,21 @@ function JYTmv(this::ResNN,Wdata,W,theta,Y,tmp)
             W += this.Q'*Wdata[:,cnt,:]
             cnt = cnt-1
         end
-        dW = JYTmv(this.layer,W,[],theta[:,i],tmp[i,1],tmp[i,2])
+        dW = JYTmv(this.layer,W,zeros(T,0),theta[:,i],tmp[i,1],tmp[i,2])
         W  += this.h*dW
     end
     return W
 end
 
-function JTmv{T}(this::ResNN,Wdata,W,theta::Array{T},Y,tmp)
+function JTmv{T}(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y,tmp)
 
     nex = div(length(Y),nFeatIn(this))
     if !isempty(Wdata) && any(this.outTimes.!=0)
         Wdata = reshape(Wdata,:,sum(this.outTimes),nex)
     end
-    if isempty(W)
+    if length(W)==0
         if any(this.outTimes.!=0)
-            W = 0 #assume the Wdata is non-zero
+            W = zero(T) #assume the Wdata is non-zero
         else
             W = Wdata
         end
@@ -165,7 +166,7 @@ function JTmv{T}(this::ResNN,Wdata,W,theta::Array{T},Y,tmp)
             W +=  this.Q'* Wdata[:,cnt,:]
             cnt = cnt-1
         end
-        dmbi,dW = JTmv(this.layer,W,[],theta[:,i],tmp[i,1],tmp[i,2])
+        dmbi,dW = JTmv(this.layer,W,zeros(T,0),theta[:,i],tmp[i,1],tmp[i,2])
         dtheta[:,i]  = this.h*dmbi
         W += this.h*dW
     end

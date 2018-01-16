@@ -1,22 +1,23 @@
-export convFFTKernel, getEigs
+export convFFTKernel, getEigs,getConvFFTKernel
 ## For the functions nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta : see abstractConvKernel.jl
 ## All convKernel types are assumed to have fields nImage and sK
-type convFFTKernel <: abstractConvKernel
+type convFFTKernel{T} <: abstractConvKernel{T}
     nImg
     sK
     S
-    function convFFTKernel(nImg,sK,TYPE = Float64)
-        S = getEigs(nImg,sK,Complex{TYPE})
-        return new(nImg,sK,S)
-    end
 end
-ComplexArrayUnion = Union{Array{Complex128},Array{Complex64}};
-function getEigs(nImg,sK,TYPE)
+
+function getConvFFTKernel(TYPE::Type,nImg,sK)
+	S = getEigs(Complex{TYPE},nImg,sK)
+	return convFFTKernel{TYPE}(nImg,sK,S)
+end
+
+function getEigs(TYPE,nImg,sK)
     S = zeros(TYPE,prod(nImg),prod(sK[1:2]));
     for k=1:prod(sK[1:2])
         Kk = zeros(sK[1],sK[2]);
         Kk[k] = 1;
-        Ak = getConvMatPeriodic(Kk,[nImg[1],nImg[2], 1]);
+        Ak = getConvMatPeriodic(TYPE,Kk,[nImg[1],nImg[2], 1]);
 		Akk = full(convert(Array{TYPE},Ak[:,1]));
         S[:,k] = vec(fft2(reshape(Akk,nImg[1],nImg[2]) ));
     end
@@ -24,24 +25,23 @@ function getEigs(nImg,sK,TYPE)
 end
 
 export Amv
-function Amv(this::convFFTKernel,theta,Y)
+function Amv{T}(this::convFFTKernel{T},theta::Array{T},Y::Array{T})
 
     nex   = div(numel(Y),prod(nImgIn(this)))
 
     # compute convolution
-    AY    = zeros(Complex{eltype(Y)},tuple([nImgOut(this);  nex]...));
+    AY    = zeros(Complex{T},tuple([nImgOut(this);  nex]...));
     theta = reshape(theta, tuple([prod(this.sK[1:2]); this.sK[3:4]]...));
     Yh    = ifft2(reshape(Y,tuple([nImgIn(this); nex]...)));
-
     #### allocate stuff for the loop
-    Sk = zeros(Complex{eltype(Y)},tuple(nImgOut(this)...))
+    Sk = zeros(Complex{T},tuple(nImgOut(this)...))
     #T  = zeros(Complex{eltype(Y)},tuple(nImgOut(this)...))
     nn = nImgOut(this); nn[3] = 1;
-    sumT = zeros(Complex{eltype(Y)},tuple([nn;nex]...))
+    sumT = zeros(Complex{T},tuple([nn;nex]...))
     ####
        
     for k=1:this.sK[4]
-        Sk = reshape(this.S*theta[:,:,k],tuple(nImgIn(this)...));
+		Sk = reshape(this.S*theta[:,:,k],tuple(nImgIn(this)...));
         #T  = Sk .* Yh;
         #sumT = sum(T,3)
         sumT = hadamardSum(sumT,Yh,Sk)
@@ -52,16 +52,16 @@ function Amv(this::convFFTKernel,theta,Y)
     return Y
 end
 
-function ATmv(this::convFFTKernel,theta,Z)
+function ATmv{T}(this::convFFTKernel{T},theta::Array{T},Z::Array{T})
     
     nex   =  div(numel(Z),prod(nImgOut(this)));
-    ATY   = zeros(Complex{eltype(Z)},tuple([nImgIn(this); nex]...));
+    ATY   = zeros(Complex{T},tuple([nImgIn(this); nex]...));
     theta = reshape(theta, prod(this.sK[1:2]),this.sK[3],this.sK[4]);
     #### allocate stuff for the loop
-    Sk = zeros(Complex{eltype(Z)},tuple(nImgOut(this)...))
+    Sk = zeros(Complex{T},tuple(nImgOut(this)...))
     #T  = zeros(Complex{eltype(Z)},tuple(nImgOut(this)...))
     nn = nImgOut(this); nn[3] = 1;
-    sumT = zeros(Complex{eltype(Z)},tuple([nn;nex]...))
+    sumT = zeros(Complex{T},tuple([nn;nex]...))
     ####
     
     Yh = fft2(reshape(Z,tuple([nImgOut(this); nex]...)));
@@ -81,7 +81,7 @@ function ATmv(this::convFFTKernel,theta,Z)
     return ATY
 end
 
-function Jthetamv(this::convFFTKernel,dtheta,dummy,Y,temp=nothing)
+function Jthetamv{T}(this::convFFTKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing)
 
     nex    =  div(numel(Y),nFeatIn(this));
     Y      = reshape(Y,:,nex);
@@ -89,7 +89,7 @@ function Jthetamv(this::convFFTKernel,dtheta,dummy,Y,temp=nothing)
     return Z
 end
 
-function JthetaTmv(this::convFFTKernel,Z,dummy,Y)
+function JthetaTmv{T}(this::convFFTKernel{T},Z::Array{T},dummy,Y::Array{T})
     #  derivative of Z*(A(theta)*Y) w.r.t. theta
 
     nex  =  div(numel(Y),nFeatIn(this));
@@ -98,7 +98,7 @@ function JthetaTmv(this::convFFTKernel,Z,dummy,Y)
     Y     = permutedims(reshape(Y,tuple([nImgIn(this); nex ]...)),[1 2 4 3]);
     Yh    = reshape(fft2(Y),prod(this.nImg[1:2]),nex*this.sK[3]);
     Zh    = permutedims(ifft2(reshape(Z,tuple([nImgOut(this); nex]...))),[1 2 4 3]);
-    Zh     = reshape(Zh,:, this.sK[4]);
+    Zh    = reshape(Zh,:, this.sK[4]);
 
     for k=1:prod(this.sK[1:2])
         temp = conj(this.S[:,k]) .* Yh
@@ -110,7 +110,7 @@ function JthetaTmv(this::convFFTKernel,Z,dummy,Y)
     return dtheta
 end
 
-function hadamardSum(sumT::ComplexArrayUnion,Yh::ComplexArrayUnion,Sk::ComplexArrayUnion)
+function hadamardSum{T}(sumT::Array{T},Yh::Array{T},Sk::Array{T})
     sumT .= 0.0;
     for i4 = 1:size(Yh,4)
         for i3 = 1:size(Yh,3)

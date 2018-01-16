@@ -1,20 +1,24 @@
-export Connector
+export Connector,getConnector
 
-type Connector <: AbstractMeganetElement
+type Connector{T} <: AbstractMeganetElement{T}
     K
     b
     outTimes
     Q
-    Connector(K;b=0.0,outTimes=0,Q=I) = new(K,b,outTimes,Q)
 end
 
 nTheta(this::Connector) = 0
 nFeatIn(this::Connector) = size(this.K,2)
 nFeatOut(this::Connector) = size(this.K,1)
 nDataOut(this::Connector) = ((Q==I) ? nFeatOut(this) : size(Q,1))
-initTheta(this::Connector) = zeros(0)
+initTheta{T}(this::Connector{T}) = zeros(T,0)
 
-function apply(this::Connector,theta,Y0,doDerivative=true)
+function getConnector(TYPE::Type, K; b = zero(TYPE),outTimes=0,Q=I)
+	return Connector{TYPE}(K,b,outTimes,Q);
+end
+
+
+function apply{T}(this::Connector{T},theta::Array{T},Y0::Array{T},doDerivative=true)
     nex = div(length(Y0),nFeatIn(this))
     Y0  = reshape(Y0,:,nex)
     Y = this.K*Y0 .+ this.b
@@ -27,7 +31,7 @@ function apply(this::Connector,theta,Y0,doDerivative=true)
     return Ydata, Y, tmp
 end
 
-function Jmv(this::Connector,dtheta,dY,theta,Y,tmp=nothing)
+function Jmv{T}(this::Connector{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp=nothing)
 
     nex = div(length(dY),nFeatIn(this))
     dY  = reshape(dY,:,nex)
@@ -40,20 +44,20 @@ function Jmv(this::Connector,dtheta,dY,theta,Y,tmp=nothing)
     return dYdata,dY
 end
 
-function JTmv(this::Connector,Wdata,W,theta,Y,tmp=nothing)
+function JTmv{T}(this::Connector{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp=nothing)
     nex = div(length(Y),nFeatIn(this))
-    if isempty(W)
-        W = 0
+    if length(W)==0
+        W = zero(T);
     else
         W     = reshape(W,:,nex);
     end
 
-    if !isempty(Wdata)
+    if length(Wdata)>0
         Wdata = reshape(Wdata,:,nex);
         W     = W+ this.Q'*Wdata;
     end
 
-    dtheta = zeros(0);
+    dtheta = zeros(T,0);
     W   = this.K'*W;
 
     return dtheta,W

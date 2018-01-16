@@ -48,43 +48,43 @@ export getJOp, getJYOp, getJthetaOp
   initTheta - initialize parameters
 
 """
-abstract type AbstractMeganetElement end
+abstract type AbstractMeganetElement{T} end
 
 """
 return number of trainable weights
 """
-nTheta(this::AbstractMeganetElement) = error("An AbstractMeganetElement must provide method nTheta")
+nTheta{T}(this::AbstractMeganetElement{T}) = error("An AbstractMeganetElement must provide method nTheta")
 
 """
 number of input features
 """
-nFeatIn(this::AbstractMeganetElement) = error("An AbstractMeganetElement must provide method nFeatIn")
+nFeatIn{T}(this::AbstractMeganetElement{T}) = error("An AbstractMeganetElement must provide method nFeatIn")
 
 """
 number of data going to classifier
 """
-nDataOut(this::AbstractMeganetElement) = nFeatOut(this)
+nDataOut{T}(this::AbstractMeganetElement{T}) = nFeatOut(this)
 
 
 """
 number of output features
 """
-nFeatOut(this::AbstractMeganetElement) = error("An AbstractMeganetElement must provide method nFeatOut")
+nFeatOut{T}(this::AbstractMeganetElement{T}) = error("An AbstractMeganetElement must provide method nFeatOut")
 
 """
 split weights into parts
 """
-splitWeights(this::AbstractMeganetElement,theta) = error("An AbstractMeganetElement must provide method splitWeights")
+splitWeights{T}(this::AbstractMeganetElement{T},theta::Array{T}) = error("An AbstractMeganetElement must provide method splitWeights")
 
 """
 initialize weights
 """
-initTheta(this::AbstractMeganetElement) = randn(nTheta(this))
+initTheta{T}(this::AbstractMeganetElement{T}) = randn(nTheta(this))
 
 """
 transforms feature vector Y using the weights theta
 """
-apply(this::AbstractMeganetElement,theta,Y,doDerivative)= error("An AbstractMeganetElement must provide method apply ")
+apply{T}(this::AbstractMeganetElement{T},theta::Array{T},Y::Array{T},doDerivative)= error("An AbstractMeganetElement must provide method apply ")
 
 """
 computes dY = transpose(J_Y(theta,Y))\*W
@@ -102,7 +102,7 @@ Output:
 
   dY     - directional derivative, numel(dY)==numel(Y)
 """
-function JYTmv(this::AbstractMeganetElement,Wdata,W,theta,Y,tmp=nothing)
+function JYTmv{T}(this::AbstractMeganetElement{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp=nothing)
     return JTmv(this,Wdata,W,theta,Y,tmp)[2]
 end
 
@@ -122,7 +122,7 @@ Output:
 
   dZ     - directional derivative, numel(dZ)==numel(Z)
 """
-function JYmv(this::AbstractMeganetElement,dY,theta,Y,tmp=nothing)
+function JYmv{T}(this::AbstractMeganetElement{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp=nothing)
     return Jmv(this,[],dY,theta,Y,tmp);
 end
 
@@ -144,7 +144,7 @@ Output:
   Z     - current output features
   J     - Jacobian, LinearOperator
 """
-function linearizeY(this::AbstractMeganetElement,theta,Y)
+function linearizeY{T}(this::AbstractMeganetElement{T},theta::Array{T},Y::Array{T})
     Z,~,tmp  = apply(this,theta,Y)
     J        = getJYOp(this,theta,Y,tmp)
     return Z,J
@@ -168,7 +168,7 @@ Output:
 
   dY     - directional derivative, numel(dY)==numel(Y)
 """
-function getJYOp(this::AbstractMeganetElement,theta,Y,tmp=nothing)
+function getJYOp{T}(this::AbstractMeganetElement{T},theta,Y,tmp=nothing)
     nex    = div(length(Y),nFeatIn(this))
     m      = nex*nDataOut(this)
     n      = length(Y);
@@ -195,7 +195,7 @@ Output:
 
   dZ     - directional derivative, numel(dZ)==numel(Z)
 """
-function Jthetamv(this::AbstractMeganetElement,dtheta,theta,Y,tmp)
+function Jthetamv{T}(this::AbstractMeganetElement{T},dtheta,theta,Y,tmp)
     return Jmv(this,dtheta,0*Y,theta,Y,tmp);
 end
 
@@ -216,7 +216,8 @@ Output:
   dtheta - directional derivative, numel(dtheta)==numel(theta)
 """
 function JthetaTmv(this::AbstractMeganetElement,Wdata,W,theta,Y,tmp=nothing)
-     return JTmv(this,Wdata,W,theta,Y,tmp)[1]
+     error("There is a never ending recursive call over here... Need to fix this");
+	 return JTmv(this,Wdata,W,theta,Y,tmp)[1]
 end
 
 """
@@ -236,7 +237,7 @@ Output:
 
   J     - Jacobian, LinearOperator
 """
-function getJthetaOp(this::AbstractMeganetElement,theta,Y,tmp=nothing)
+function getJthetaOp{T}(this::AbstractMeganetElement{T},theta,Y,tmp=nothing)
     nex    = div(length(Y),nFeatIn(this))
     m      = nex*nDataOut(this)
     n      = length(theta)
@@ -260,7 +261,7 @@ Output:
   Z     - output features
   J     - Jacobian, LinearOperator
 """
-function linearizeTheta(this::AbstractMeganetElement,theta,Y)
+function linearizeTheta{T}(this::AbstractMeganetElement{T},theta,Y)
     Z,Z2,tmp = apply(this,theta,Y)
     J       = getJthetaOp(this,theta,Y,tmp)
     return Z,J
@@ -283,7 +284,7 @@ Output:
 
   dZ     - directional derivative, numel(dZ)==numel(Z)
 """
-function Jmv(this::AbstractMeganetElement,dtheta,dY,theta,Y,tmp=nothing)
+function Jmv{T}(this::AbstractMeganetElement{T},dtheta,dY,theta,Y,tmp=nothing)
 
     if isempty(dtheta) || norm(vec(dtheta))==0
         dZdata = 0.0
@@ -338,7 +339,7 @@ Output:
 
   J     - Jacobian, LinearOperator
 """
-function getJOp(this::AbstractMeganetElement,theta,Y,tmp=nothing)
+function getJOp{T}(this::AbstractMeganetElement{T},theta,Y,tmp=nothing)
     nex    = div(length(Y),nFeatIn(this))
     m      = nex*nDataOut(this)
     nth    = length(theta)

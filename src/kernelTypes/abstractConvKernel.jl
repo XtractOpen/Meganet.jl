@@ -1,15 +1,15 @@
 export nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta
 
-abstract type abstractConvKernel end
+abstract type abstractConvKernel{T} end
 
 ## All convKernel types are assumed to have fields nImage (size of the image) and sK (size of the Convolution Kernel)
 
 function nImgIn(this::abstractConvKernel)
-    return [this.nImg[1], this.nImg[2], this.sK[3]]
+    return [this.nImg[1]; this.nImg[2]; this.sK[3]]
 end
 
 function nImgOut(this::abstractConvKernel)
-   return [this.nImg[1], this.nImg[2], this.sK[4]]
+   return [this.nImg[1]; this.nImg[2]; this.sK[4]]
 end
 
 function nFeatIn(this::abstractConvKernel)
@@ -24,22 +24,22 @@ function nTheta(this::abstractConvKernel)
 end
 
 
-function getOp(this::abstractConvKernel,theta)
+function getOp{T}(this::abstractConvKernel{T},theta::Array{T})
 
     m = prod(nImgOut(this))
     n = prod(nImgIn(this))
 
-    A = LinearOperator(m,n,false,false,
+    A = LinearOperator{T}(m,n,false,false,
                         v -> Amv(this,theta,v),
                         Nullable{Function}(),
                         w -> ATmv(this,theta,w))
     return A
 end
 
-function initTheta(this::abstractConvKernel)
+function initTheta{T}(this::abstractConvKernel{T})
 
     sd    = 0.1;
-    theta = sd*randn(prod(this.sK));
+    theta = sd*randn(T,prod(this.sK));
     #id1 = find(theta>2*sd);
     #theta(id1[:]) = randn(numel(id1),1);
 

@@ -1,16 +1,21 @@
-export singleLayer
+export singleLayer,getSingleLayer
 
-type singleLayer <: AbstractMeganetElement
+type singleLayer{T} <: AbstractMeganetElement{T}
         activation  # activation function
         K           # transformation type
         nLayer      # normalization layer
         Bin         # bias inside nonlinearity
         Bout        # bias outside nonlinearity
-        singleLayer(K,nLayer;Bin=zeros(nFeatOut(K),0),Bout=zeros(nFeatOut(K),0),activation=tanhActivation) =
-        new(activation,K,nLayer,Bin,Bout)
+        # singleLayer{T}(K,nLayer;Bin=zeros(T,nFeatOut(K),0),Bout=zeros(T,nFeatOut(K),0),activation=tanhActivation) =
+        
 end
 
-function splitWeights(this::singleLayer,theta)
+function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),activation=tanhActivation)
+	singleLayer{TYPE}(activation,K,nLayer,Bin,Bout);
+end
+
+
+function splitWeights{T}(this::singleLayer{T},theta::Array{T})
     th1 = theta[1:nTheta(this.K)]
     cnt = length(th1)
     th2 = theta[cnt+(1:size(this.Bin,2))]
@@ -23,12 +28,11 @@ function splitWeights(this::singleLayer,theta)
     return th1, th2, th3, th4
 end
 
-function apply(this::singleLayer,theta,Y,doDerivative=false)
+function apply{T}(this::singleLayer{T},theta::Array{T},Y::Array{T},doDerivative=false)
     tmp = Array{Any}(2)
     nex = div(length(Y),nFeatIn(this))
     Y   = reshape(Y,:,nex)
     th1,th2,th3,th4 = splitWeights(this,theta)
-
     Y     =  getOp(this.K,th1)*Y .+ this.Bin * th2
     Y,dummy,tmp[1] = apply(this.nLayer,th4,Y,doDerivative)
     Y,tmp[2]  = this.activation(Y,doDerivative)
@@ -37,28 +41,28 @@ function apply(this::singleLayer,theta,Y,doDerivative=false)
     return Ydata, Y, tmp
 end
 
-function nTheta(this::singleLayer)
+function nTheta{T}(this::singleLayer{T})
     return nTheta(this.K)+size(this.Bin,2) + size(this.Bout,2) + nTheta(this.nLayer)
 end
 
-function nFeatIn(this::singleLayer)
+function nFeatIn{T}(this::singleLayer{T})
     return nFeatIn(this.K)
 end
 
-function nFeatOut(this::singleLayer)
+function nFeatOut{T}(this::singleLayer{T})
     return nFeatOut(this.K)
 end
 
-function nDataOut(this::singleLayer)
+function nDataOut{T}(this::singleLayer{T})
     return nFeatOut(this.K)
 end
 
-function initTheta(this::singleLayer)
-    return [vec(initTheta(this.K)); 0.1*ones(size(this.Bin,2),1) ; 0.1*ones(size(this.Bout,2),1); initTheta(this.nLayer) ]
+function initTheta{T}(this::singleLayer{T})
+    return [vec(initTheta(this.K)); 0.1*ones(T,size(this.Bin,2),1) ; 0.1*ones(T,size(this.Bout,2),1); initTheta(this.nLayer) ]
 end
 
 
-function Jthetamv(this::singleLayer,dtheta,theta,Y,tmp)
+function Jthetamv{T}(this::singleLayer{T},dtheta::Array{T},theta::Array{T},Y::Array{T},tmp)
     dA             = tmp[2]
     nex            = div(length(Y),nFeatIn(this))
     Y              = reshape(Y,:,nex)
@@ -72,7 +76,7 @@ function Jthetamv(this::singleLayer,dtheta,theta,Y,tmp)
     return dZ, dZ
 end
 
-function JYmv(this::singleLayer,dY,theta,Y,tmp)
+function JYmv{T}(this::singleLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)
     dA  = tmp[2]
     nex = div(length(dY),nFeatIn(this))
     th1,th2,th3,th4 = splitWeights(this,theta)
@@ -84,7 +88,7 @@ function JYmv(this::singleLayer,dY,theta,Y,tmp)
     return dZ,dZ
 end
 
-function Jmv(this::singleLayer,dtheta,dY,theta,Y,tmp)
+function Jmv{T}(this::singleLayer{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)
     dA  = tmp[2]
     nex = div(length(Y),nFeatIn(this))
     th1,th2,th3,th4 = splitWeights(this,theta)
@@ -102,7 +106,7 @@ function Jmv(this::singleLayer,dtheta,dY,theta,Y,tmp)
     return dZ,dZ
 end
 
-function JTmv(this::singleLayer,Z,dummy,theta,Y,tmp)
+function JTmv{T}(this::singleLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)
     dA   = tmp[2]
     nex  = div(length(Y),nFeatIn(this))
     Z    = reshape(Z,:,nex)
@@ -111,7 +115,7 @@ function JTmv(this::singleLayer,Z,dummy,theta,Y,tmp)
 
     dth3      = vec(sum(this.Bout'*Z,2))
     dAZ       = dA.*Z
-    dth4,dAZ  = JTmv(this.nLayer,dAZ,[],th4,Kop*Y.+this.Bin*th2,tmp[1])
+    dth4,dAZ  = JTmv(this.nLayer,dAZ,zeros(T,0),th4,Kop*Y.+this.Bin*th2,tmp[1])
     dth2      = vec(sum(this.Bin'*reshape(dAZ,:,nex),2))
     dth1      = JthetaTmv(this.K, dAZ,theta,Y)
 
@@ -122,7 +126,7 @@ function JTmv(this::singleLayer,Z,dummy,theta,Y,tmp)
 
 end
 
-function JthetaTmv(this::singleLayer,Z,dummy,theta,Y,tmp)
+function JthetaTmv{T}(this::singleLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)
     dA        = tmp[2]
     nex       = div(length(Z),nFeatOut(this))
     th1,th2,th3,th4  = splitWeights(this,theta)
@@ -137,7 +141,7 @@ function JthetaTmv(this::singleLayer,Z,dummy,theta,Y,tmp)
     return [vec(dth1); vec(dth2); vec(dth3); vec(dth4)];
 end
 
-function JYTmv(this::singleLayer,Z,dummy,theta,Y,tmp)
+function JYTmv{T}(this::singleLayer{T},Z::Array{T},dummy,theta::Array{T},Y::Array{T},tmp)
     dA   = tmp[2]
     nex  = div(length(Y),nFeatIn(this))
     th1,th2,th3,th4 = splitWeights(this,theta)

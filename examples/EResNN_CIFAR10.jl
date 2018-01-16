@@ -1,7 +1,7 @@
 using MAT
 using Meganet
 
-vars = matread("/Users/lruthot/Dropbox/DynamicCNN/Meganet.jl/examples/ECNN_compareCIFAR10.mat")
+vars = matread("ECNN_compareCIFAR10.mat")
 Y = vars["Y0"]
 C = vars["C"]
 theta = vars["theta"]

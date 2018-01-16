@@ -1,6 +1,7 @@
 module Meganet
 
 using LinearOperators
+using MAT
 using Base.Test
 
 include("AbstractMeganetElement.jl")
@@ -31,6 +32,10 @@ include("optimization/sgd.jl")
 include("utils/getConvMatPeriodic.jl")
 include("utils/testAbstractMeganetElement.jl")
 include("utils/testLossFunction.jl")
-include("utils/utilities.jl")
-include("utils/checkDerivative.jl")
+include("utils/utilities.jl");
+include("utils/checkDerivative.jl");
+include("utils/normalizeData.jl");
+
+include("utils/getCIFAR10.jl");
+
 end

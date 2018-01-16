@@ -1,7 +1,7 @@
-export tanhActivation
+export identityActivation
 
 """
- hyperbolic tan activation A = tanh(Y)
+ identity activation A = identity(Y)
 
  Input:
 
@@ -10,21 +10,20 @@ export tanhActivation
  Optional Input:
 
    doDerivative - flag for computing derivative, set via varargin
-                  Ex: tanhActivation(Y,true);
+                  Ex: identityActivation(Y,true);
 
  Output:
 
   A  - activation
   dA - derivatives
 """
-function tanhActivation{T}(Y::Array{T},doDerivative::Bool=false)
-
-A = tanh.(Y)
+function identityActivation{T}(Y::Array{T},doDerivative::Bool=false)
 
 if doDerivative
-     dA = 1-A.^2
+    dA = ones(T,Y);
 else
     dA = zeros(T,0)
 end
+
 return A,dA
 end
