@@ -10,7 +10,7 @@ end
 nTheta(this::Connector) = 0
 nFeatIn(this::Connector) = size(this.K,2)
 nFeatOut(this::Connector) = size(this.K,1)
-nDataOut(this::Connector) = ((Q==I) ? nFeatOut(this) : size(Q,1))
+nDataOut(this::Connector) = ((this.Q==I) ? nFeatOut(this) : size(this.Q,1))
 initTheta{T}(this::Connector{T}) = zeros(T,0)
 
 function getConnector(TYPE::Type, K; b = zero(TYPE),outTimes=0,Q=I)
