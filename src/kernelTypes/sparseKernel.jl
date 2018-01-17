@@ -1,4 +1,4 @@
-export SparseKernel, getSparseConvKernel2D
+export SparseKernel, getSparseKernel, getSparseConvKernel2D
 
 """
 kernel where weights parameterize entried of a sparse matrix
@@ -9,8 +9,17 @@ type SparseKernel{T}
         jval::Array{Int}
         colptr::Array{Int}
         rowval::Array{Int}
-        nzval::Array
-        Qs::AbstractArray
+        nzval::Array{T}
+        Qs::AbstractArray{T}
+end
+
+function getSparseKernel(TYPE::Type,A::SparseMatrixCSC,Qs)
+      ival,jval = ind2sub(size(A),find(A))
+      if size(Qs,1)!=length(ival)
+          error("sizes must match")
+      end
+      nK = [size(A,1); size(A,2)]
+      return SparseKernel{TYPE}(nK,ival,jval,sort(A.colptr),A.rowval,convert.(TYPE,1.0*A.nzval),convert.(TYPE,Qs))
 end
 
 """
@@ -24,7 +33,7 @@ function getSparseConvKernel2D(TYPE::Type, nImg,sK;stride=[1;1])
     nTh = maximum(A);
 
     Q = sparse(collect(1:nzA),A.nzval,ones(TYPE,nzA),nzA,nTh);
-	
+
 	#### this used to be in the constructor:####
 	ival,jval = ind2sub(size(A),find(A))
     if size(Q,1)!=length(ival)
@@ -46,13 +55,13 @@ function nFeatOut(this::SparseKernel)
     return this.nK[1]
 end
 
-function initTheta(this::SparseKernel)
-    return randn(nTheta(this))
+function initTheta{T}(this::SparseKernel{T})
+    return randn(T,nTheta(this))
 end
 
-function getOp{T}(this::SparseKernel,theta::Array{T})
+function getOp{T}(this::SparseKernel{T},theta::Array{T})
      this.nzval = this.Qs*vec(theta)
-	return SparseMatrixCSC{T}(this.nK[1],this.nK[2],this.colptr,this.rowval,this.nzval)
+	return SparseMatrixCSC(this.nK[1],this.nK[2],this.colptr,this.rowval,this.nzval)
 end
 
 function Jthetamv(this::SparseKernel,dtheta,theta,Y,tmp=nothing)
@@ -63,7 +72,7 @@ function JthetaTmv(this::SparseKernel,Z,theta,Y,tmp=nothing)
     Z = reshape(Z,this.nK[1],:)
     Y = reshape(Y,this.nK[2],:)
     #t = sum(Z[this.ival,:] .* Y[this.jval,:],2)
-    
+
     t = zeros(length(this.ival))
     for j=1:size(Z,2)
         for i=1:length(this.ival)

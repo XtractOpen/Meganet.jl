@@ -6,8 +6,7 @@ using LinearOperators
 nImg = [8,10]
 sK   = [3,3,4,4]
 
-K = convFFTKernel(nImg,sK)
-
+K = getConvFFTKernel(Float64,nImg,sK)
 
 @testset  "adjoint test" begin
 theta = initTheta(K)

@@ -3,12 +3,13 @@ export TikhonovReg, regularizer
 """
 Tikhnov Regularizer R(x) = 0.5*alpha*(H*(x-xref), x-xref), with H spd
 """
-type TikhonovReg
+type TikhonovReg{T}
     H
-    alpha::Real
-    xref
-    TikhonovReg(;H=I,alpha=1.0,xref=zeros(0))=new(H,alpha,vec(xref))
+    alpha::T
+    xref::Array{T}
 end
+
+getTikhonovReg(TYPE;H=I,alpha=1.0,xref=zeros(0))=TikhonovReg{TYPE}(H,convert(TYPE,alpha),convert.(TYPE,vec(xref)))
 
 function regularizer(this::TikhonovReg,x)
     u = vec(copy(x))

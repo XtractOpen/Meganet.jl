@@ -2,7 +2,7 @@ using Meganet
 using Base.Test
 
 
-S = TikhonovReg()
+S = getTikhonovReg(Float64)
 
 x = randn(10)
 Sc,dS,d2S = regularizer(S,x)
