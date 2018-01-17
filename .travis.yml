@@ -12,8 +12,7 @@ notifications:
 
 before_install:
    - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-   - sudo apt-get -qq update
-   - sudo apt-get install -y hdf5-tools
+   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get -qq update; sudo apt-get install -y hdf5-tools; else brew install hdf5; fi
 
 script:
     - julia -p 4 --check-bounds=yes -e 'Pkg.clone(pwd()); Pkg.add("MAT"); Pkg.build("Meganet"); Pkg.test("Meganet";coverage=true)'
