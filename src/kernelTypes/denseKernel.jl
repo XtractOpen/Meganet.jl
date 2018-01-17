@@ -1,7 +1,11 @@
-export DenseKernel, getOp
+export DenseKernel, getOp, getDenseKernel
 
-type DenseKernel
+type DenseKernel{T}
     nK
+end
+
+function getDenseKernel(TYPE::Type,nK)
+	return DenseKernel{TYPE}(copy(nK));
 end
 
 function nTheta(kernel::DenseKernel)

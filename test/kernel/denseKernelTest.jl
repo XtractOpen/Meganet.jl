@@ -1,7 +1,7 @@
 using Base.Test
 using Meganet
 
-K = DenseKernel([24;14])
+K = getDenseKernel(Float64,[24;14])
 
 @testset  "adjoint test" begin
 theta = initTheta(K)
