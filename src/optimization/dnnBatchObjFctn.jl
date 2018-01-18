@@ -6,7 +6,7 @@ objective function for deep neural networks
 J(theta,C) = loss(h(W*Y(theta)), C) + Rtheta(theta) + R(W)
 
 """
-type dnnObjFctn
+mutable struct dnnObjFctn
      net    :: NN              # network param (including data)
      pLoss             # loss function
      pRegTheta         # regularizer for network parameters
@@ -17,12 +17,12 @@ type dnnObjFctn
 
 splitWeights(this::dnnObjFctn,x) = (return x[1:nTheta(this.net)], x[nTheta(this.net)+1:end])
 
-function getMisfit{T}(this::dnnObjFctn,thetaW::Vector{T},Y::Array{T},C::Array{T},doDerivative=true)
+function getMisfit(this::dnnObjFctn,thetaW::Vector{T},Y::Array{T},C::Array{T},doDerivative=true) where {T}
     theta,W = splitWeights(this,thetaW)
     return getMisfit(this,theta,W,Y,C,doDerivative)
 end
 
-function getMisfit{T}(this::dnnObjFctn,theta::Array{T},W::Array{T},Y::Array{T},C::Array{T},doDerivative=true)
+function getMisfit(this::dnnObjFctn,theta::Array{T},W::Array{T},Y::Array{T},C::Array{T},doDerivative=true) where {T}
 
     YN,dummy,tmp = apply(this.net,theta,Y,doDerivative)
 
@@ -34,7 +34,7 @@ function getMisfit{T}(this::dnnObjFctn,theta::Array{T},W::Array{T},Y::Array{T},C
     return Fc,hisF,vec(dYF),vec(dWF)
 end
 
-function evalObjFctn{T}(this::dnnObjFctn,thetaW::Array{T},Y::Array{T},C::Array{T},doDerivative=true)
+function evalObjFctn(this::dnnObjFctn,thetaW::Array{T},Y::Array{T},C::Array{T},doDerivative=true) where {T}
     theta,W = splitWeights(this,thetaW)
 	
     # compute misfit
