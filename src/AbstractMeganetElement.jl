@@ -56,6 +56,11 @@ return number of trainable weights
 nTheta(this::AbstractMeganetElement) = error("An AbstractMeganetElement must provide method nTheta")
 
 """
+returns the precision of the weights and features
+"""
+getPrecision{T}(this::AbstractMeganetElement{T}) = T
+
+"""
 number of input features
 """
 nFeatIn(this::AbstractMeganetElement) = error("An AbstractMeganetElement must provide method nFeatIn")
