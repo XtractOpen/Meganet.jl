@@ -3,7 +3,7 @@ export SparseKernel, getSparseKernel, getSparseConvKernel2D
 """
 kernel where weights parameterize entried of a sparse matrix
 """
-type SparseKernel{T}
+mutable struct SparseKernel{T}
     nK::Array{Int}
         ival::Array{Int}
         jval::Array{Int}
@@ -55,11 +55,11 @@ function nFeatOut(this::SparseKernel)
     return this.nK[1]
 end
 
-function initTheta{T}(this::SparseKernel{T})
+function initTheta(this::SparseKernel{T}) where {T}
     return randn(T,nTheta(this))
 end
 
-function getOp{T}(this::SparseKernel{T},theta::Array{T})
+function getOp(this::SparseKernel{T},theta::Array{T}) where {T}
      this.nzval = this.Qs*vec(theta)
 	return SparseMatrixCSC(this.nK[1],this.nK[2],this.colptr,this.rowval,this.nzval)
 end

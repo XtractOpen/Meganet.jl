@@ -1,7 +1,7 @@
 export convFFTKernel, getEigs,getConvFFTKernel
 ## For the functions nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta : see abstractConvKernel.jl
 ## All convKernel types are assumed to have fields nImage and sK
-type convFFTKernel{T} <: abstractConvKernel{T}
+mutable struct convFFTKernel{T} <: abstractConvKernel{T}
     nImg
     sK
     S
@@ -25,7 +25,7 @@ function getEigs(TYPE,nImg,sK)
 end
 
 export Amv
-function Amv{T}(this::convFFTKernel{T},theta::Array{T},Y::Array{T})
+function Amv(this::convFFTKernel{T},theta::Array{T},Y::Array{T}) where {T}
 
     nex   = div(numel(Y),prod(nImgIn(this)))
 
@@ -52,7 +52,7 @@ function Amv{T}(this::convFFTKernel{T},theta::Array{T},Y::Array{T})
     return Y
 end
 
-function ATmv{T}(this::convFFTKernel{T},theta::Array{T},Z::Array{T})
+function ATmv(this::convFFTKernel{T},theta::Array{T},Z::Array{T}) where {T}
     
     nex   =  div(numel(Z),prod(nImgOut(this)));
     ATY   = zeros(Complex{T},tuple([nImgIn(this); nex]...));
@@ -81,7 +81,7 @@ function ATmv{T}(this::convFFTKernel{T},theta::Array{T},Z::Array{T})
     return ATY
 end
 
-function Jthetamv{T}(this::convFFTKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing)
+function Jthetamv(this::convFFTKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing) where {T}
 
     nex    =  div(numel(Y),nFeatIn(this));
     Y      = reshape(Y,:,nex);
@@ -89,7 +89,7 @@ function Jthetamv{T}(this::convFFTKernel{T},dtheta::Array{T},dummy,Y::Array{T},t
     return Z
 end
 
-function JthetaTmv{T}(this::convFFTKernel{T},Z::Array{T},dummy,Y::Array{T})
+function JthetaTmv(this::convFFTKernel{T},Z::Array{T},dummy,Y::Array{T}) where {T}
     #  derivative of Z*(A(theta)*Y) w.r.t. theta
 
     nex  =  div(numel(Y),nFeatIn(this));
@@ -110,7 +110,7 @@ function JthetaTmv{T}(this::convFFTKernel{T},Z::Array{T},dummy,Y::Array{T})
     return dtheta
 end
 
-function hadamardSum{T}(sumT::Array{T},Yh::Array{T},Sk::Array{T})
+function hadamardSum(sumT::Array{T},Yh::Array{T},Sk::Array{T}) where {T}
     sumT .= 0.0;
     for i4 = 1:size(Yh,4)
         for i3 = 1:size(Yh,3)

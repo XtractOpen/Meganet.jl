@@ -1,6 +1,6 @@
 export convGEMMKernel,Amv,ATmv,transposeTest,getConvGEMMKernel
 
-type convGEMMKernel{T} <: abstractConvKernel{T}
+mutable struct convGEMMKernel{T} <: abstractConvKernel{T}
     nImg
     sK
 end
@@ -8,7 +8,7 @@ function getConvGEMMKernel(TYPE::Type,nImg,sK)
 	return convGEMMKernel{TYPE}(copy(nImg),copy(sK));
 end
 
-function Amv{T}(this::convGEMMKernel{T},theta::Array{T},Y::Array{T})
+function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T}
     ## We assume that the data Y is held in the order XYCN.
 	sK = this.sK;
 	nImg = this.nImg;
@@ -38,7 +38,7 @@ function Amv{T}(this::convGEMMKernel{T},theta::Array{T},Y::Array{T})
     return AY
 end
 
-function ATmv{T}(this::convGEMMKernel{T},theta::Array{T},Z::Array{T})
+function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T}
 	nImg  = this.nImg;
 	sK    = this.sK;
     nex   =  div(numel(Z),prod(nImgOut(this)));
@@ -68,13 +68,13 @@ function ATmv{T}(this::convGEMMKernel{T},theta::Array{T},Z::Array{T})
     return ATZ
 end
 	
-function Jthetamv{T}(this::convGEMMKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing)
+function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing) where {T}
     nex    =  div(numel(Y),nFeatIn(this));
     Z      = Amv(this,dtheta,Y);
     return Z
 end
 
-function JthetaTmv{T}(this::convGEMMKernel{T},Z::Array{T},dummy,Y::Array{T})
+function JthetaTmv(this::convGEMMKernel{T},Z::Array{T},dummy,Y::Array{T}) where {T}
      # derivative of Z*(A(theta)*Y) w.r.t. theta 
 	sK = this.sK;
 	nImg = this.nImg;
@@ -110,7 +110,7 @@ end
 
 
 
-function getColumn!{T}(Z::Array{T},Zk::Array{T},k::Int64)
+function getColumn!(Z::Array{T},Zk::Array{T},k::Int64) where {T}
 for c=1:size(Z,2)
 	for j=1:size(Z,1)
 		@inbounds	Zk[j,c] = Z[j,c,k];
@@ -118,7 +118,7 @@ for c=1:size(Z,2)
 end
 end
 
-function multConv2Dblock{T}(x::Array{T},K::Array, y::Array{T}, t::Array{T},shiftX,shiftT,imIdx;doDerivative = 0)
+function multConv2Dblock(x::Array{T},K::Array, y::Array{T}, t::Array{T},shiftX,shiftT,imIdx;doDerivative = 0) where {T}
 ## y = K*x
 ## K - 3X3 array of Arrays
 ## x - a vector of length |nImgag+2|*cin (zero padded)
