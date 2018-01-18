@@ -1,6 +1,6 @@
 export DenseKernel, getOp, getDenseKernel
 
-type DenseKernel{T}
+mutable struct DenseKernel{T}
     nK
 end
 

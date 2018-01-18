@@ -5,7 +5,7 @@ export DoubleSymLayer,getDoubleSymLayer
 
  Y(theta,Y0) = K(th1)'(activation( K(th1)\*Y0 + trafo.Bin\*th2))) + trafo.Bout\*th3
 """
-type DoubleSymLayer{T} <: AbstractMeganetElement{T}
+mutable struct DoubleSymLayer{T} <: AbstractMeganetElement{T}
     activation     # activation function
     K              # Kernel model, e.g., convMod
     nLayer         # normalization layer
@@ -20,7 +20,7 @@ function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement,Bin=zeros
 				   
 end
 
-function splitWeights{T}(this::DoubleSymLayer{T},theta::Array{T})
+function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T}
 
     th1 = theta[1:nTheta(this.K)]
     cnt = length(th1)
@@ -34,7 +34,7 @@ function splitWeights{T}(this::DoubleSymLayer{T},theta::Array{T})
     return th1, th2, th3, th4
 end
 
-function apply{T}(this::DoubleSymLayer{T},theta::Array{T},Y::Array{T},doDerivative=true)
+function apply(this::DoubleSymLayer{T},theta::Array{T},Y::Array{T},doDerivative=true) where {T}
 
     #QZ = []
     tmp = Array{Any}(2)
@@ -77,7 +77,7 @@ function nDataOut(this::DoubleSymLayer)
     return nFeatIn(this)
 end
 
-function initTheta{T}(this::DoubleSymLayer{T})
+function initTheta(this::DoubleSymLayer{T}) where {T}
     theta = [vec(initTheta(this.K));
              0.1*ones(size(this.Bin,2),1);
              0.1*ones(size(this.Bout,2),1);
@@ -85,7 +85,7 @@ function initTheta{T}(this::DoubleSymLayer{T})
     return theta
 end
 
-function Jthetamv{T}(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Array{T},tmp)
+function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
 
     A,dA = this.activation(tmp[2],true)
     th1, th2,th3,th4    = splitWeights(this,theta)
@@ -102,7 +102,7 @@ function Jthetamv{T}(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y:
     return dY, dY
 end
 
-function JYmv{T}(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)
+function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
 
     dA = this.activation(tmp[2],true)[2]
 
@@ -118,7 +118,7 @@ function JYmv{T}(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T
     return dZ, dZ
 end
 
-function Jmv{T}(this::DoubleSymLayer{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)
+function Jmv(this::DoubleSymLayer{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
     A,dA = this.activation(copy(tmp[2]),true)
     nex = div(length(Y),nFeatIn(this))
 
@@ -150,7 +150,7 @@ function Jmv{T}(this::DoubleSymLayer{T},dtheta::Array{T},dY::Array{T},theta::Arr
 end
 
 
-function JthetaTmv{T}(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)
+function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
 
     nex       = div(length(Y),nFeatIn(this))
     Z         = reshape(Z,:,nex)
@@ -170,7 +170,7 @@ function JthetaTmv{T}(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta:
     return dtheta
 end
 
-function JYTmv{T}(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)
+function JYTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
 
     nex       = div(length(Y),nFeatIn(this))
     Z         = reshape(Z,:,nex)
@@ -185,7 +185,7 @@ function JYTmv{T}(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Arr
     return dY
 end
 
-function JTmv{T}(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)
+function JTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
 
     dY = []
     nex       = div(length(Y),nFeatIn(this))

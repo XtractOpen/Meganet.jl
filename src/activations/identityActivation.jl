@@ -17,7 +17,7 @@ export identityActivation
   A  - activation
   dA - derivatives
 """
-function identityActivation{T}(Y::Array{T},doDerivative::Bool=false)
+function identityActivation(Y::Array{T},doDerivative::Bool=false) where {T}
 
 if doDerivative
     dA = ones(T,Y);

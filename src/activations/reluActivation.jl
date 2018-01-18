@@ -17,7 +17,7 @@ export reluActivation
   A  - activation
   dA - derivatives
 """
-function reluActivation{T}(Y::Array{T},doDerivative::Bool=false)
+function reluActivation(Y::Array{T},doDerivative::Bool=false) where {T}
 
 Y = max.(Y,0);
 
