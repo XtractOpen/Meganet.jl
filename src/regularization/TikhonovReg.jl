@@ -3,7 +3,7 @@ export TikhonovReg, regularizer
 """
 Tikhnov Regularizer R(x) = 0.5*alpha*(H*(x-xref), x-xref), with H spd
 """
-type TikhonovReg{T}
+mutable struct TikhonovReg{T}
     H
     alpha::T
     xref::Array{T}

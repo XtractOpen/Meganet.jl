@@ -1,6 +1,6 @@
 
 export getCIFAR10
-function getCIFAR10{T}(n, CIFAR10dataPath::String = "",num::T = one(Float32)) ## num is just for indicating the type. Maybe there's a better solution?
+function getCIFAR10(n, CIFAR10dataPath::String = "",num::T = one(Float32)) where {T} ## num is just for indicating the type. Maybe there's a better solution?
 nImg = [32,32,3];
 ALL_IMG_TRAIN = zeros(T,prod(nImg),50000);
 ALL_LABELS_TRAIN = zeros(T,10,50000);

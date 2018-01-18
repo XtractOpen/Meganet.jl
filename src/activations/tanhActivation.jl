@@ -17,7 +17,7 @@ export tanhActivation
   A  - activation
   dA - derivatives
 """
-function tanhActivation{T}(Y::Array{T},doDerivative::Bool=false)
+function tanhActivation(Y::Array{T},doDerivative::Bool=false) where {T}
 
 A = tanh.(Y)
 
