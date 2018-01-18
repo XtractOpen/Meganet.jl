@@ -1,4 +1,4 @@
-export TikhonovReg, regularizer, getTikhonovReg
+export TikhonovReg, getTikhonovReg, regularizer
 
 """
 Tikhnov Regularizer R(x) = 0.5*alpha*(H*(x-xref), x-xref), with H spd
