@@ -3,7 +3,7 @@ export SoftmaxLoss, getSoftMaxLoss, getLabels, getMisfit
 """
 sofmax loss function
 """
-type SoftmaxLoss{T}
+mutable struct SoftmaxLoss{T}
     shift :: T
     theta :: T
     addBias::Bool
@@ -18,7 +18,7 @@ end
 import Base.display
 display(this::SoftmaxLoss) = println("SoftmaxLoss(shift$(this.shift),theta=$(this.theta),addBias=$(this.addBias))")
 
-function getMisfit{T}(this::SoftmaxLoss{T},W::Array{T},Y::Array{T},C::Array{T},doDY=true,doDW=true)
+function getMisfit(this::SoftmaxLoss{T},W::Array{T},Y::Array{T},C::Array{T},doDY=true,doDW=true) where {T}
 
     dWF = zeros(T,0); d2WF = zeros(T,0); dYF =zeros(T,0); d2YF = zeros(T,0)
 
@@ -70,7 +70,7 @@ function getMisfit{T}(this::SoftmaxLoss{T},W::Array{T},Y::Array{T},C::Array{T},d
     return F, para, dWF, d2WF, dYF, d2YF
 end
 
-function getLabels{T}(this::SoftmaxLoss,W::Array{T},Y=nothing)
+function getLabels(this::SoftmaxLoss,W::Array{T},Y=nothing) where {T}
     if Y==nothing
         S = W
         nex = size(S,2)
