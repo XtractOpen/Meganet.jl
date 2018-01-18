@@ -1,6 +1,6 @@
 export normLayer, getBatchNormLayer, getTVNormLayer
 
-type normLayer{T} <: AbstractMeganetElement{T}
+mutable struct normLayer{T} <: AbstractMeganetElement{T}
     nData        # size of data #pixels x #channels x #examples
     doNorm  ::Int  # specifies dimensions along which to normalize
     eps		::T          # smoothing factor
@@ -27,7 +27,7 @@ function getTVNormLayer(TYPE::Type,nData;eps = convert(TYPE,1e-3),isTrainable::B
     end
 end
 
-function apply{T}(this::normLayer,theta::Array{T},Y::Array{T},doDerivative=true)
+function apply(this::normLayer,theta::Array{T},Y::Array{T},doDerivative=true) where {T}
 
     # first organize Y with channels
     nf  = this.nData[2]
@@ -69,11 +69,11 @@ function initTheta(this::normLayer)
 end
 
 
-function Jthetamv{T}(this::normLayer,dtheta::Array{T},theta::Array{T},Y::Array{T},dA)
+function Jthetamv(this::normLayer,dtheta::Array{T},theta::Array{T},Y::Array{T},dA) where {T}
     return zeros(T,size(Y)), zeros(T,size(Y))
 end
 
-function JYmv{T}(this::normLayer,dY::Array{T},theta::Array{T},Y::Array{T},dA=nothing)
+function JYmv(this::normLayer,dY::Array{T},theta::Array{T},Y::Array{T},dA=nothing) where {T}
 
     nex = div(length(dY),nFeatIn(this))
     nf  = this.nData[2]
@@ -96,21 +96,21 @@ function JYmv{T}(this::normLayer,dY::Array{T},theta::Array{T},Y::Array{T},dA=not
     return dZ,dZ
 end
 
-function Jmv{T}(this::normLayer,dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},dA::Array{T})
+function Jmv(this::normLayer,dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},dA::Array{T}) where {T}
     return JYmv(this,dY,theta,Y,dA)
 end
 
-function  JTmv{T}(this::normLayer,Z::Array{T},dummy,theta::Array{T},Y::Array{T},dA)
+function  JTmv(this::normLayer,Z::Array{T},dummy,theta::Array{T},Y::Array{T},dA) where {T}
     dtheta = zeros(T,0)
     dY     = JYTmv(this,Z,dummy,theta,Y,dA)
     return dtheta, dY
 end
 
-function JthetaTmv{T}(this::normLayer,Z::Array{T},dummy,theta::Array{T},Y::Array{T},dA)
+function JthetaTmv(this::normLayer,Z::Array{T},dummy,theta::Array{T},Y::Array{T},dA) where {T}
     return zeros(T,0)
 end
 
-function JYTmv{T}(this::normLayer,Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},dA=nothing)
+function JYTmv(this::normLayer,Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},dA=nothing) where {T}
 
     nex = div(length(Y),nFeatIn(this))
     nf  = this.nData[2]
