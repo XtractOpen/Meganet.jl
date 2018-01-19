@@ -23,6 +23,7 @@ function nTheta(this::abstractConvKernel)
    return prod(this.sK);
 end
 
+
 function getOp(this::abstractConvKernel{T},theta::Array{T}) where {T <: Number}
 
     m = prod(nImgOut(this))
@@ -35,7 +36,7 @@ function getOp(this::abstractConvKernel{T},theta::Array{T}) where {T <: Number}
     return A
 end
 
-function initTheta(this::abstractConvKernel)
+function initTheta(this::abstractConvKernel{T}) where {T <: Number}
 
     sd    = 0.1;
     theta = sd*randn(T,prod(this.sK));
