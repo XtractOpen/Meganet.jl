@@ -1,24 +1,24 @@
 using Meganet
 using Base.Test
 
-include("../../src/optimization/sgd.jl")
+# include("../../src/optimization/sgd.jl")
 
 # network
 nf = 18
 nc = 3
 nclass=10
 nex = 40
-K = DenseKernel([nf,nf])
-Bout = randn(nf,3)
-nLayer = getBatchNormLayer([div(nf,nc),nc],isTrainable=true)
-L     = singleLayer(K,nLayer,Bout=Bout)
-net = ResNN(L,8,1.0)
+K = getDenseKernel(Float64,[nf,nf])
+Bout = randn(Float64,nf,3)
+nLayer = getBatchNormLayer(Float64,[div(nf,nc),nc],isTrainable=true)
+L     = getSingleLayer(Float64,K,nLayer,Bout=Bout)
+net = getResNN(Float64,L,8,1.0)
 
 # regularizers
-pRegTh = TikhonovReg(alpha=1e-5)
-pRegW = TikhonovReg(alpha=1e-5)
+pRegTh = getTikhonovReg(Float64,alpha=1e-5)
+pRegW = getTikhonovReg(Float64,alpha=1e-5)
 # loss
-pLoss = SoftmaxLoss()
+pLoss = getSoftMaxLoss(Float64)
 # data
 objFun = dnnObjFctn(net,pLoss,pRegTh,pRegW)
 

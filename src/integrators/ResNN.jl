@@ -22,19 +22,19 @@ function getResNN(TYPE::Type,layer,nt,h=one(TYPE),outTimes=eye(Int,nt)[:,nt],Q=I
 end
 
 
-function nTheta(this::ResNN{T}) where {T}
+function nTheta(this::ResNN)
     return this.nt*nTheta(this.layer);
 end
 
-function nFeatIn(this::ResNN{T}) where {T}
+function nFeatIn(this::ResNN)
     return nFeatIn(this.layer);
 end
 
-function nFeatOut(this::ResNN{T}) where {T}
+function nFeatOut(this::ResNN)
     return nFeatOut(this.layer);
 end
 
-function nDataOut(this::ResNN{T}) where {T}
+function nDataOut(this::ResNN)
     if length(this.Q)==1
         n = sum(this.outTimes)*nFeatOut(this.layer)
     else
@@ -43,12 +43,12 @@ function nDataOut(this::ResNN{T}) where {T}
     return n
 end
 
-function initTheta(this::ResNN{T}) where {T}
+function initTheta(this::ResNN{T}) where {T<:Number}
     return repmat(vec(initTheta(this.layer)),this.nt,1)
 end
 
 # ------- apply forward problems -----------
-function  apply(this::ResNN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T}
+function  apply(this::ResNN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T<:Number}
 
     nex = div(length(Y0),nFeatIn(this))
     Y   = reshape(Y0,:,nex)
@@ -74,7 +74,7 @@ function  apply(this::ResNN{T},theta::Array{T},Y0::Array{T},doDerivative=true) w
 end
 
 # -------- Jacobian matvecs ---------------
-function JYmv(this::ResNN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
+function JYmv(this::ResNN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T<:Number}
     # if isempty(dY)
     #     dY = 0.0;
     # elseif length(dY)>1
@@ -93,7 +93,7 @@ function JYmv(this::ResNN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where
 end
 
 
-function  Jmv(this::ResNN{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
+function  Jmv(this::ResNN{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T<:Number}
     nex = div(length(Y),nFeatIn(this))
     if length(dY)==0
          dY = zeros(T,size(Y))
@@ -115,7 +115,7 @@ end
 
 # -------- Jacobian transpose matvecs ----------------
 
-function JYTmv(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
+function JYTmv(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T<:Number}
 
     nex = div(length(Y),nFeatIn(this))
     if length(Wdata)>0
@@ -140,7 +140,7 @@ function JYTmv(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Arr
     return W
 end
 
-function JTmv(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y,tmp) where {T}
+function JTmv(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y,tmp) where {T<:Number}
 
     nex = div(length(Y),nFeatIn(this))
     if !isempty(Wdata) && any(this.outTimes.!=0)

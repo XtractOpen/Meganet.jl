@@ -2,17 +2,17 @@ using Base.Test
 using Meganet
 
 
-K1 = DenseKernel([18,10])
-nL = getTVNormLayer([6,3])
+K1 = getDenseKernel(Float64,[18,10])
+nL = getTVNormLayer(Float64,[6,3])
 
-L1 = singleLayer(K1,nL)
+L1 = getSingleLayer(Float64,K1,nL)
 
 
-K2 = DenseKernel([8,18])
-nL = getTVNormLayer([2,4])
-L2 = singleLayer(K2,nL)
+K2 = getDenseKernel(Float64,[8,18])
+nL = getTVNormLayer(Float64,[2,4])
+L2 = getSingleLayer(Float64,K2,nL)
 
-net = NN([L1;L2])
+net = getNN([L1;L2])
 
 @testset "NN" begin
  testAbstractMeganetElement(net)

@@ -221,7 +221,7 @@ Output:
   dtheta - directional derivative, numel(dtheta)==numel(theta)
 """
 function JthetaTmv(this::AbstractMeganetElement{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
-     error("There is a never ending recursive call over here... Need to fix this");
+     # error("There is a never ending recursive call over here... Need to fix this");
 	 return JTmv(this,Wdata,W,theta,Y,tmp)[1]
 end
 
@@ -292,16 +292,24 @@ Output:
 function Jmv(this::AbstractMeganetElement{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
 
     if isempty(dtheta) || norm(vec(dtheta))==0
-        dZdata = 0.0
-        dZ     = 0.0
+        dZdata = (T)[]
+        dZ     = (T)[]
     else
         dZdata,dZ = Jthetamv(this,dtheta,theta,Y,tmp)
     end
 
     if !isempty(dY) && norm(vec(dY))>0
         dZdt,dZt = JYmv(this,dY,theta,Y,tmp);
-        dZdata +=  dZdt;
-        dZ     +=  dZt;
+		if !isempty(dZdata)
+        	dZdata +=  dZdt;
+		else
+			dZdata  = dZdt;
+		end
+		if !isempty(dZ)
+        	dZ     +=  dZt;
+		else
+			dZ = dZt;
+		end
     end
     return dZdata, dZ
 end
