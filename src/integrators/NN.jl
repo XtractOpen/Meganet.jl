@@ -11,7 +11,7 @@ mutable struct NN{T} <: AbstractMeganetElement{T}
     Q
 end
 
-function getNN(layers::Array{AbstractMeganetElement{T}},outTimes=eye(Int,length(layers))[:,end],Q=I) where {T}
+function getNN(layers::Array{AbstractMeganetElement{T}},outTimes=eye(Int,length(layers))[:,end],Q=I) where {T <: Number}
 	nt   = length(layers)
     nout = nFeatOut(layers[1])
 
@@ -35,24 +35,24 @@ function display(this::NN)
 end
 
 # ---------- counting thetas, input and output features -----
-function nTheta(this::NN{T}) where {T}
+function nTheta(this::NN)
     n = 0;
     for k=1:length(this.layers)
         n = n + nTheta(this.layers[k]);
     end
     return n
 end
-nFeatIn(this::NN{T}) where {T}  = nFeatIn(this.layers[1])
-nFeatOut(this::NN{T}) where {T} = nFeatOut(this.layers[end])
+nFeatIn(this::NN)   = nFeatIn(this.layers[1])
+nFeatOut(this::NN) = nFeatOut(this.layers[end])
 
-function nDataOut(this::NN{T}) where {T}
+function nDataOut(this::NN)
     n=0;
     for k=1:length(this.layers)
         n = n+this.outTimes[k]* nFeatOut(this.layers[k]);
     end
 end
 
-function initTheta(this::NN{T}) where {T}
+function initTheta(this::NN{T}) where {T <: Number}
     theta = zeros(T,0)
     for k=1:length(this.layers)
         theta = [theta; vec(initTheta(this.layers[k]))]
@@ -62,7 +62,7 @@ end
 
 
 # --------- forward problem ----------
-function apply(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T}
+function apply(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T <: Number}
 
     Y  = copy(Y0)
     nex = div(length(Y),nFeatIn(this))
@@ -90,7 +90,7 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where
 end
 
 # -------- Jacobian matvecs --------
-function JYmv(this::NN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
+function JYmv(this::NN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
     nex = div(length(Y),nFeatIn(this))
     nt = length(this.layers)
     cnt = 0
@@ -106,7 +106,7 @@ function JYmv(this::NN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T
     return dYdata, dY
 end
 
-function  Jmv(this::NN,dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
+function  Jmv(this::NN{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
     nex = div(length(Y),nFeatIn(this))
     nt = length(this.layers);
     if isempty(dY)
@@ -128,7 +128,7 @@ function  Jmv(this::NN,dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T}
 end
 
 # -------- Jacobian' matvecs --------
-function JYTmv(this,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
+function JYTmv(this::NN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
 
     nex = div(length(Y),nFeatIn(this));
     if !isempty(Wdata)
@@ -149,7 +149,7 @@ function JYTmv(this,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp)
             W = W + this.Q'*Wdata[end-cnt2-nn+1:end-cnt2,:]
             cnt2 = cnt2 + nn
         end
-        W  = JYTmv(this.layers[i], W,[],theta[end-cnt-ni+1:end-cnt],
+        W  = JYTmv(this.layers[i], W,(T)[],theta[end-cnt-ni+1:end-cnt],
                     tmp[i,1],tmp[i,2])
         cnt = cnt+ni
     end
@@ -157,13 +157,13 @@ function JYTmv(this,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp)
 end
 
 
-function JthetaTmv(this::NN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
+function JthetaTmv(this::NN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
 	return JTmv(this,Wdata,W,theta,Y,tmp)[1];
 end
 
 
 
-function JTmv(this::NN,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T}
+function JTmv(this::NN,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
     nex = div(length(Y),nFeatIn(this))
 
     if size(Wdata,1)>0

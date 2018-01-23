@@ -1,14 +1,14 @@
 using Base.Test
 using Meganet
 
-K = DenseKernel([18,18])
+K = getDenseKernel(Float64,[18,18])
 nex = 3
 Bin = randn(18,4)
 Bout = randn(18,3)
-nLayer = getBatchNormLayer([6,3],isTrainable=true)
-L     = singleLayer(K,nLayer,Bout=Bout)
+nLayer = getBatchNormLayer(Float64,[6,3],isTrainable=true)
+L     = getSingleLayer(Float64,K,nLayer,Bout=Bout)
 
-net = ResNN(L,4,.1)
+net = getResNN(Float64,L,4,.1)
 
 @testset "ResNN" begin
  testAbstractMeganetElement(net)
