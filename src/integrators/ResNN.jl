@@ -140,7 +140,7 @@ function JYTmv(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Arr
     return W
 end
 
-function JTmv(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y,tmp) where {T<:Number}
+function JTmv(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T<:Number}
 
     nex = div(length(Y),nFeatIn(this))
     if !isempty(Wdata) && any(this.outTimes.!=0)

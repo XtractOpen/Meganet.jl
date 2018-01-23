@@ -12,7 +12,10 @@ K2 = getDenseKernel(Float64,[8,18])
 nL = getTVNormLayer(Float64,[2,4])
 L2 = getSingleLayer(Float64,K2,nL)
 
-net = getNN([L1;L2])
+blocks = Array{AbstractMeganetElement{Float64}}(2)
+blocks[1] = L1;
+blocks[2] = L2;
+net = getNN(blocks)
 
 @testset "NN" begin
  testAbstractMeganetElement(net)

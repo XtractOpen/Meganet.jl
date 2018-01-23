@@ -30,7 +30,7 @@ C   = full(sparse(full(rand(1:nclass,nex)),collect(1:nex),ones(nex),nclass,nex))
 theta = initTheta(net)
 W     = randn(nclass,nw2)/10
 
-opt = SGD(learningRate=1e-4,maxEpochs=10,miniBatch=2)
+opt = getSGDsolver(Float64,learningRate=1e-4,maxEpochs=10,miniBatch=2)
 display(opt)
 
 solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y,C,Y,C)
