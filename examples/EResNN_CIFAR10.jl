@@ -1,5 +1,4 @@
-using MAT
-using Meganet
+using MAT, Meganet
 
 n = 64;
 Y_train,C_train,Y_test,C_test = getCIFAR10(n,string(pwd(),"//..//data//CIFAR10//"));
