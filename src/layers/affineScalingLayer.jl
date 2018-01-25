@@ -8,7 +8,7 @@ kron(s3,kron(s2,s1)) * vec(Y) + kron(b3,kron(e2,e1)) +
 kron(e3,kron(b2,e1)) + kron(e3,kron(e2,b1));
 """
 mutable struct AffineScalingLayer{T} <: AbstractMeganetElement{T}
-    nData       # describe size of data, at least first two dim must be correct.
+    nData::Array{Int,1}       # describe size of data, at least first two dim must be correct.
 end
 function getAffineScalingLayer(TYPE::Type, nData)
     return AffineScalingLayer{TYPE}(nData)
@@ -42,7 +42,6 @@ function apply(this::AffineScalingLayer{T},theta::Array{T},Y::Array{T},doDerivat
     Ydata = Y
     return Ydata, Y, dA
 end
-
 
 function nTheta(this::AffineScalingLayer)
     return 2*this.nData[2]
