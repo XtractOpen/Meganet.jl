@@ -1,29 +1,22 @@
-using MAT, Meganet, BenchmarkTools, Compat
+using MAT, Meganet, BenchmarkTools, Compat, JLD, ProfileView
 
-n = 512
+# Macro Benchmark on CIFAR10
+n = 32
+miniBatchSize = 32
+
 path2data = "/home/klensink/Documents/cifar-10-batches-mat/"
+history = Pkg.dir("Meganet")*"/benchmarks/CIFAR10/cifar10_512_64.jld"
+
 Y_train,C_train,Y_test,C_test = getCIFAR10(n, path2data)
-#Y_train,C_train,Y_test,C_test = getCIFAR10(n,string(pwd(),"//..//data//CIFAR10//"));
 
-# using PyPlot
-# y = Y_train[:,50]; y = y - minimum(y); y = y./maximum(y);
-# y = reshape(y,32,32,3);
-# y[:,:,1] = y[:,:,1]';y[:,:,2] = y[:,:,2]';y[:,:,3] = y[:,:,3]';
-# figure(); imshow(y)
-
-miniBatchSize = 64
 nImg = [32; 32]
 cin  = 3
 nc   = [16;32;64;64]
 nt   = 2*[1;1;1]
 h    = [1.;1.;1.]
 
-
 TYPE = Float32;
 
-
-# getConvKernel = (nImg,sK) -> getConvGEMMKernel(TYPE,nImg,sK);
-# getConvKernel = (nImg,sK) -> getConvFFTKernel(TYPE,nImg,sK);
 getConvKernel = (nImg,sK) -> getSparseConvKernel2D(TYPE,nImg,sK);
 
 # opening layer
@@ -67,10 +60,6 @@ theta = initTheta(net);
 
 display(net)
 
-# @time Zj = apply(net,theta,Y_train[:,1:2],true)
-# @time Zj = apply(net,theta,Y_train[:,1:miniBatchSize],true)
-
-
 # regularizers
 pRegTh = getTikhonovReg(TYPE;alpha=4e-4)
 pRegW = getTikhonovReg(TYPE;alpha=4e-4)
@@ -83,13 +72,11 @@ W = min.(W,.2);
 W = max.(W,-.2);
 W = convert(Array{TYPE},W);
 
-@benchmark solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
+# Save benchmarks
+solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 
-# Profile.clear()
-# Profile.clear_malloc_data()
-# Profile.init(n = 10^7, delay = 0.01)
-# @profile solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y,C,Y,C)
-
-# open("/tmp/EREsNN_CIFAR10.txt", "w") do s
-    # Profile.print(IOContext(s, :displaysize => (24, 500)))
-# end
+#@profiler solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
+Profile.clear()
+Profile.init(100000000, 0.001)
+@profile solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
+ProfileView.view()
