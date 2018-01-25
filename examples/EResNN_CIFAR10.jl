@@ -1,9 +1,7 @@
-using MAT, Meganet, BenchmarkTools, Compat
+using MAT, Meganet
 
-n = 512
-path2data = "/home/klensink/Documents/cifar-10-batches-mat/"
-Y_train,C_train,Y_test,C_test = getCIFAR10(n, path2data)
-#Y_train,C_train,Y_test,C_test = getCIFAR10(n,string(pwd(),"//..//data//CIFAR10//"));
+n = 64;
+Y_train,C_train,Y_test,C_test = getCIFAR10(n,string(pwd(),"//..//data//CIFAR10//"));
 
 # using PyPlot
 # y = Y_train[:,50]; y = y - minimum(y); y = y./maximum(y);
@@ -11,7 +9,7 @@ Y_train,C_train,Y_test,C_test = getCIFAR10(n, path2data)
 # y[:,:,1] = y[:,:,1]';y[:,:,2] = y[:,:,2]';y[:,:,3] = y[:,:,3]';
 # figure(); imshow(y)
 
-miniBatchSize = 64
+miniBatchSize = 64;
 nImg = [32; 32]
 cin  = 3
 nc   = [16;32;64;64]
@@ -37,15 +35,15 @@ for k=1:length(nt)
     K2 = getConvKernel(nImg,[3,3,nc[k],nc[k]])
     nL = getBatchNormLayer(TYPE,[prod(nImg);nc[k]],isTrainable=true)
     L2 = getDoubleSymLayer(TYPE,K2,nL)
-    RN  = getResNN(TYPE,L2,nt[k],h[k])
-
+    RN  = getResNN(TYPE,L2,nt[k],h[k])	
+	
     if k<length(nt)
         RN.outTimes *=0
     end
     blocks = [blocks;RN]
     # change channels
     Kc = getConvKernel(nImg,[1,1,nc[k],nc[k+1]]);
-
+	
     nL = getBatchNormLayer(TYPE,[prod(nImg);nc[k+1]],isTrainable=true)
     blocks = [blocks; getSingleLayer(TYPE,Kc,nL)]
 
@@ -83,7 +81,7 @@ W = min.(W,.2);
 W = max.(W,-.2);
 W = convert(Array{TYPE},W);
 
-@benchmark solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
+solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 
 # Profile.clear()
 # Profile.clear_malloc_data()
