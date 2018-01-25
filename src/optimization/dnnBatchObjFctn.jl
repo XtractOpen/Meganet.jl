@@ -7,7 +7,7 @@ J(theta,C) = loss(h(W*Y(theta)), C) + Rtheta(theta) + R(W)
 
 """
 mutable struct dnnObjFctn
-     net    :: NN              # network param (including data)
+     net    :: AbstractMeganetElement              # network param (including data)
      pLoss             # loss function
      pRegTheta         # regularizer for network parameters
      pRegW             # regularizer for classifier
@@ -27,7 +27,7 @@ function getMisfit(this::dnnObjFctn,theta::Array{T},W::Array{T},Y::Array{T},C::A
     YN,dummy,tmp = apply(this.net,theta,Y,doDerivative)
 
     Fc,hisF,dWF,d2WF,dYF,d2YF = getMisfit(this.pLoss,W,YN,C,doDerivative,doDerivative)
-	
+
     if doDerivative
 		 dYF = JthetaTmv(this.net,dYF,zeros(T,0),theta,Y,tmp)
     end
@@ -36,10 +36,10 @@ end
 
 function evalObjFctn(this::dnnObjFctn,thetaW::Array{T},Y::Array{T},C::Array{T},doDerivative=true) where {T}
     theta,W = splitWeights(this,thetaW)
-	
+
     # compute misfit
     Fc,hisF,dFth,dFW = getMisfit(this,theta,W,Y,C,doDerivative)
-	
+
     # regularizer for weights
     Rth,dRth, = regularizer(this.pRegTheta,theta)
 

@@ -1,4 +1,4 @@
-export AffineScalingLayer
+export AffineScalingLayer, getAffineScalingLayer
 
 """
 Scales and shifts the 3D feature tensor along each dimension. This is
@@ -9,6 +9,9 @@ kron(e3,kron(b2,e1)) + kron(e3,kron(e2,b1));
 """
 mutable struct AffineScalingLayer{T} <: AbstractMeganetElement{T}
     nData::Array{Int,1}       # describe size of data, at least first two dim must be correct.
+end
+function getAffineScalingLayer(TYPE::Type, nData)
+    return AffineScalingLayer{TYPE}(nData)
 end
 
 function splitWeights(this::AffineScalingLayer{T},theta::Array{T}) where {T <: Number}
@@ -40,20 +43,19 @@ function apply(this::AffineScalingLayer{T},theta::Array{T},Y::Array{T},doDerivat
     return Ydata, Y, dA
 end
 
-
-function nTheta(this::AffineScalingLayer{<:Number})
+function nTheta(this::AffineScalingLayer)
     return 2*this.nData[2]
 end
 
-function nFeatIn(this::AffineScalingLayer{<:Number})
+function nFeatIn(this::AffineScalingLayer)
     return prod(this.nData[1:2])
 end
 
-function nFeatOut(this::AffineScalingLayer{<:Number})
+function nFeatOut(this::AffineScalingLayer)
    return prod(this.nData[1:2])
 end
 
-function nDataOut(this::AffineScalingLayer{<:Number})
+function nDataOut(this::AffineScalingLayer)
     return nFeatOut(this);
 end
 

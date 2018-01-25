@@ -23,7 +23,7 @@ function getDoubleSymLayer(K::abstractConvKernel{T},nLayer::AbstractMeganetEleme
 				   
 end
 
-function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T <: Number}
+function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T<:Number}
 
     th1 = theta[1:nTheta(this.K)]
     cnt = length(th1)
@@ -37,7 +37,7 @@ function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T <: Numbe
     return th1, th2, th3, th4
 end
 
-function apply(this::DoubleSymLayer{T},theta::Array{T},Y::Array{T},doDerivative=true) where {T <: Number}
+function apply(this::DoubleSymLayer{T},theta::Array{T},Y::Array{T},doDerivative=true)  where {T<:Number}
 
     #QZ = []
     tmp = Array{Any}(2) #TODO: Should this be type T? 
@@ -80,7 +80,7 @@ function nDataOut(this::DoubleSymLayer)
     return nFeatIn(this)
 end
 
-function initTheta(this::DoubleSymLayer{T}) where {T <: Number}
+function initTheta(this::DoubleSymLayer{T}) where {T<:Number}
     theta = [vec(initTheta(this.K));
              T(0.1)*ones(T, size(this.Bin,2),1);
              T(0.1)*ones(T, size(this.Bout,2),1);
@@ -88,7 +88,7 @@ function initTheta(this::DoubleSymLayer{T}) where {T <: Number}
     return theta
 end
 
-function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
 
     A,dA = this.activation(tmp[2],true)
     th1, th2,th3,th4    = splitWeights(this,theta)
@@ -105,7 +105,7 @@ function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Ar
     return dY, dY
 end
 
-function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
 
     dA = this.activation(tmp[2],true)[2]
 
@@ -121,7 +121,8 @@ function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},t
     return dZ, dZ
 end
 
-function Jmv(this::DoubleSymLayer{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+function Jmv(this::DoubleSymLayer{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
+
     A,dA = this.activation(copy(tmp[2]),true)
     nex = div(length(Y),nFeatIn(this))
 
@@ -152,8 +153,7 @@ function Jmv(this::DoubleSymLayer{T},dtheta::Array{T},dY::Array{T},theta::Array{
     return dY, dY
 end
 
-
-function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
 
     nex       = div(length(Y),nFeatIn(this))
     Z         = reshape(Z,:,nex)
@@ -173,7 +173,7 @@ function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Ar
     return dtheta
 end
 
-function JYTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+function JYTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
 
     nex       = div(length(Y),nFeatIn(this))
     Z         = reshape(Z,:,nex)
@@ -182,15 +182,15 @@ function JYTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{
     A,dA      = this.activation(tmp[2],true)
 
     dAZ       = dA.*(Kop*Z)
-    dAZ       = JYTmv(this.nLayer,dAZ,[],th4,Kop*Y,tmp[1])
+    dAZ       = JYTmv(this.nLayer,dAZ,(T)[],th4,Kop*Y,tmp[1])
     dAZ       = reshape(dAZ,:,nex)
     dY  = -(Kop'*dAZ)
     return dY
 end
 
-function JTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+function JTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
 
-    dY = []
+    dY = (T)[]
     nex       = div(length(Y),nFeatIn(this))
     Z         = reshape(Z,:,nex)
     Yt        = reshape(tmp[2],:,nex)
@@ -206,7 +206,7 @@ function JTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T
 
     dth1      = JthetaTmv(this.K,dAZ,zeros(T,0),Y)
 
-    dth1      = dth1 + JthetaTmv(this.K,A,[],Z)
+    dth1      = dth1 + JthetaTmv(this.K,A,(T)[],Z)
     dtheta    = [-vec(dth1); -vec(dth2); vec(dth3);-vec(dth4)]
 
     dAZ = reshape(dAZ,:,nex)

@@ -6,17 +6,17 @@ using Base.Test
 nf = 18
 nc = 3
 nex = 4
-K = DenseKernel([nf,nf])
+K = getDenseKernel(Float64,[nf,nf])
 Bout = randn(nf,3)
-nLayer = getBatchNormLayer([div(nf,nc),nc],isTrainable=true)
-L     = singleLayer(K,nLayer,Bout=Bout)
-net = ResNN(L,4,.1)
+nLayer = getBatchNormLayer(Float64,[div(nf,nc),nc],isTrainable=true)
+L     = getSingleLayer(Float64,K,nLayer,Bout=Bout)
+net = getResNN(Float64,L,4,.1)
 
 # regularizers
-pRegTh = TikhonovReg()
-pRegW = TikhonovReg()
+pRegTh = getTikhonovReg(Float64)
+pRegW = getTikhonovReg(Float64)
 # loss
-pLoss = SoftmaxLoss()
+pLoss = getSoftMaxLoss(Float64)
 # data
 Y   = randn(nf,nex)/10
 nw2 = (pLoss.addBias) ? nf+1 : nf

@@ -6,7 +6,6 @@ mutable struct singleLayer{T} <: AbstractMeganetElement{T}
         nLayer      :: AbstractMeganetElement{T} # normalization layer TODO: nLayer should be of type NormLayer but the way its written now it may be a NN
         Bin         :: Array{T} # bias inside nonlinearity
         Bout        :: Array{T}# bias outside nonlinearity
-        
 end
 
 function getSingleLayer(K::abstractConvKernel{T},nLayer;
@@ -45,19 +44,19 @@ function apply(this::singleLayer{T},theta::Array{T},Y::Array{T},doDerivative=fal
     return Ydata, Y, tmp
 end
 
-function nTheta(this::singleLayer{T}) where {T <: Number}
+function nTheta(this::singleLayer)
     return nTheta(this.K)+size(this.Bin,2) + size(this.Bout,2) + nTheta(this.nLayer)
 end
 
-function nFeatIn(this::singleLayer{<: Number})
+function nFeatIn(this::singleLayer)
     return nFeatIn(this.K)
 end
 
-function nFeatOut(this::singleLayer{<: Number})
+function nFeatOut(this::singleLayer)
     return nFeatOut(this.K)
 end
 
-function nDataOut(this::singleLayer{<: Number})
+function nDataOut(this::singleLayer)
     return nFeatOut(this.K)
 end
 
@@ -139,7 +138,7 @@ function JthetaTmv(this::singleLayer{T},Z::Array{T},dummy::Array{T},theta::Array
     dAZ       = dA.*Z;
     dth3      = vec(sum(this.Bout'*Z,2));
     Kop       = getOp(this.K,th1)
-    dth4,dAZ  = JTmv(this.nLayer,dAZ,[],th4,Kop*Y.+this.Bin*th2,tmp[1])
+    dth4,dAZ  = JTmv(this.nLayer,dAZ,(T)[],th4,Kop*Y.+this.Bin*th2,tmp[1])
     dth1      = JthetaTmv(this.K,dAZ,theta,Y);
     dth2      = vec(sum(this.Bin'*reshape(dAZ,:,nex),2));
     return [vec(dth1); vec(dth2); vec(dth3); vec(dth4)];
@@ -152,6 +151,6 @@ function JYTmv(this::singleLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},
     Kop = getOp(this.K,th1)
     Z    = reshape(Z,:,nex)
     dAZ  = dA.*Z
-    dAZ = JYTmv(this.nLayer,dAZ,[],th4,Kop*Y.+this.Bin*th2,tmp[1])
+    dAZ = JYTmv(this.nLayer,dAZ,(T)[],th4,Kop*Y.+this.Bin*th2,tmp[1])
     return Kop'*reshape(dAZ,:,nex)
 end
