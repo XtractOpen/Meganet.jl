@@ -8,18 +8,18 @@ export DoubleSymLayer,getDoubleSymLayer
 mutable struct DoubleSymLayer{T} <: AbstractMeganetElement{T}
     activation :: Function     # activation function
     K          :: abstractConvKernel{T}    # Kernel model, e.g., convMod
-    nLayer     :: AbstractMeganetElement{T}    # normalization layer
+    nLayer     :: Union{normLayer{T}, NN{T}}    # normalization layer
     Bin        :: Array{T}    # Bias inside the nonlinearity
     Bout       :: Array{T}    # bias outside the nonlinearity
 end
 
 
-function getDoubleSymLayer(K::abstractConvKernel{T},nLayer::AbstractMeganetElement{T},
+function getDoubleSymLayer(TYPE::Type,K::abstractConvKernel{T},nLayer::AbstractMeganetElement{T},
                            Bin=zeros(nFeatOut(K),0),Bout=zeros(nFeatIn(K),0),
                            activation=tanhActivation) where {T <: Number}
     BinT = convert(Array{T}, Bin)
     BoutT = convert(Array{T}, Bout)
-	return DoubleSymLayer(activation,K,nLayer,BinT,BoutT);
+    return DoubleSymLayer{TYPE}(activation,K,nLayer,BinT,BoutT)
 				   
 end
 
@@ -32,7 +32,7 @@ function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T<:Number}
     th3 = theta[cnt+(1:size(this.Bout,2))]
     cnt = cnt + length(th3)
 
-    th4 = theta[cnt+1:end];
+    th4 = theta[cnt+1:end]
 
     return th1, th2, th3, th4
 end
