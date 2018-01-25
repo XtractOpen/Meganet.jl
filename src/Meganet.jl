@@ -1,8 +1,8 @@
 module Meganet
 
-using LinearOperators
-using MAT
-using Base.Test
+using LinearOperators, MAT, Base.Test
+
+import JLD, BenchmarkTools
 
 include("AbstractMeganetElement.jl")
 
@@ -37,5 +37,7 @@ include("utils/checkDerivative.jl");
 include("utils/normalizeData.jl");
 
 include("utils/getCIFAR10.jl");
+include("utils/Benchmark.jl");
+
 
 end
