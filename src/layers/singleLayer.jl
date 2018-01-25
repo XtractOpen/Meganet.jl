@@ -3,18 +3,18 @@ export singleLayer,getSingleLayer
 mutable struct singleLayer{T} <: AbstractMeganetElement{T}
         activation  :: Function # activation function
         K           :: abstractConvKernel{T}# transformation type
-        nLayer      :: AbstractMeganetElement{T} # normalization layer TODO: nLayer should be of type NormLayer but the way its written now it may be a NN
+        nLayer      :: Union{normLayer{T}, NN{T}} # normalization layer TODO: nLayer should be of type NormLayer but the way its written now it may be a NN
         Bin         :: Array{T} # bias inside nonlinearity
         Bout        :: Array{T}# bias outside nonlinearity
 end
 
-function getSingleLayer(K::abstractConvKernel{T},nLayer;
+function getSingleLayer(TYPE::Type,K::abstractConvKernel{T},nLayer;
                         Bin=zeros(nFeatOut(K),0),Bout=zeros(nFeatOut(K),0),
                         activation=tanhActivation) where {T <: Number}
     # Convert Bias to correct datatype
     BinT = convert(Array{T}, Bin)
     BoutT = convert(Array{T}, Bout)
-	singleLayer(activation,K,nLayer,BinT,BoutT);
+    singleLayer{TYPE}(activation,K,nLayer,BinT,BoutT);
 end
 
 
