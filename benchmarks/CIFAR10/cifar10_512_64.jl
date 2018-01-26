@@ -46,7 +46,7 @@ for k=1:length(nt)
         Kp = getAverageMatrix(TYPE,nImg,nc[k+1])
         blocks = [blocks; getConnector(TYPE,Kp)]
         # nImg ./=2
-		nImg = div.(nImg,2)
+	nImg = div.(nImg,2)
     end
 end
 
