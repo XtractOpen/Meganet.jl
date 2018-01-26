@@ -22,7 +22,7 @@ out_old = Meganet.JthetaTmv_old(K, Z, th, Y)
 trial = @benchmark JthetaTmv(K, Z, th, Y)
 
 # Save benchmarks
-if false
+if true
     Meganet.updatehistory!(history, trial)
     hist = JLD.load(history, "hist")
     judge(hist)

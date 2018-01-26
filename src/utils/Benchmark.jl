@@ -63,7 +63,7 @@ function BenchmarkTools.judge(hist::Vector{Meganet.Benchmark}, i::Int, j::Int;
                                     estimator::Function = BenchmarkTools.median)
     length(hist) <= 1 && error("Only one benchmark in history")
     a, b = hist[i].trial, hist[j].trial
-    j = BenchmarkTools.judge(estimator(b), estimator(a))
+    j = BenchmarkTools.judge(estimator(a), estimator(b))
 
     return j
 end
