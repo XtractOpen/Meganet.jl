@@ -10,7 +10,7 @@ mutable struct SparseKernel{T}
         colptr::Array{Int}
         rowval::Array{Int}
         nzval::Array{T}
-        Qs::Array{T}
+        Qs::AbstractArray{T}
 end
 
 function getSparseKernel(TYPE::Type,A::SparseMatrixCSC,Qs)
