@@ -74,7 +74,9 @@ W = convert(Array{TYPE},W);
 
 # Save benchmarks
 trial = @benchmark solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
-Meganet.updatehistory!(history, trial)
+if true
+    Meganet.updatehistory!(history, trial)
+end
 
 hist = JLD.load(history, "hist")
 judge(hist)
