@@ -1,11 +1,12 @@
 export testLossFunction
 
-function testLossFunction(S;nf=10,nex=20,nc=7,out=false)
+function testLossFunction(S::SoftmaxLoss{T};nf=10,nex=20,nc=7,out=false) where {T<:Number}
 
-Y   = randn(nf,nex)/10
+Y   = randn(T,nf,nex)/10
 nw2 = (S.addBias) ? nf+1 : nf
-W   = randn(nc,nw2)/10
+W   = randn(T,nc,nw2)/10
 C   = full(sparse(full(rand(1:nc,nex)),collect(1:nex),ones(nex),nc,nex))
+C   = convert.(T,C)
 
 @testset "test dW" begin
 function testdWFun(x,v=[])

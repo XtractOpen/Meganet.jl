@@ -36,10 +36,10 @@ function getOp(this::abstractConvKernel{T},theta::Array{T}) where {T}
     return A
 end
 
-function initTheta(this::abstractConvKernel{T}) where {T}
+function initTheta(this::abstractConvKernel{T}) where {T<:Number}
 
-    sd    = 0.1;
-    theta = sd*randn(T,prod(this.sK));
+    sd    = convert(T,0.1)
+    theta = sd*randn(T,prod(this.sK))
     #id1 = find(theta>2*sd);
     #theta(id1[:]) = randn(numel(id1),1);
 

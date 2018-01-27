@@ -4,8 +4,11 @@ using Meganet
 npixel   = 20
 nex      = 12
 nchannel = 3
-L        = getAffineScalingLayer(Float64,[npixel,nchannel,nex])
 
-@testset "affineScalingLayer" begin
-    testAbstractMeganetElement(L)
+for TYPE=[Float64,Float32]
+    L        = getAffineScalingLayer(TYPE,[npixel,nchannel,nex])
+
+    @testset "affineScalingLayer $TYPE" begin
+        testAbstractMeganetElement(L)
+    end
 end

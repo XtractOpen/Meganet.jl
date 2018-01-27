@@ -58,7 +58,7 @@ function nDataOut(this::singleLayer)
 end
 
 function initTheta(this::singleLayer{T}) where {T <: Number}
-    return [vec(initTheta(this.K)); 0.1*ones(T,size(this.Bin,2),1) ; 0.1*ones(T,size(this.Bout,2),1); initTheta(this.nLayer) ]
+    return [vec(initTheta(this.K)); convert(T,0.1)*ones(T,size(this.Bin,2),1) ; convert(T,0.1)*ones(T,size(this.Bout,2),1); initTheta(this.nLayer) ]
 end
 
 

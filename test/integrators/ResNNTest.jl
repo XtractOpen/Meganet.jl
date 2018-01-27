@@ -1,15 +1,17 @@
 using Base.Test
 using Meganet
 
-K = getDenseKernel(Float64,[18,18])
-nex = 3
-Bin = randn(18,4)
-Bout = randn(18,3)
-nLayer = getBatchNormLayer(Float64,[6,3],isTrainable=true)
-L     = getSingleLayer(Float64,K,nLayer,Bout=Bout)
+for TYPE=[Float64,Float32]
+    K = getDenseKernel(TYPE,[18,18])
+    nex = 3
+    Bin = randn(TYPE,18,4)
+    Bout = randn(TYPE,18,3)
+    nLayer = getBatchNormLayer(TYPE,[6,3],isTrainable=true)
+    L     = getSingleLayer(TYPE,K,nLayer,Bout=Bout)
 
-net = getResNN(Float64,L,4,.1)
+    net = getResNN(TYPE,L,4,.1)
 
-@testset "ResNN" begin
- testAbstractMeganetElement(net)
+    @testset "ResNN $TYPE" begin
+     testAbstractMeganetElement(net)
+    end
 end

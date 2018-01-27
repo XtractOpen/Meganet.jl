@@ -135,7 +135,7 @@ function JYTmv(this::NN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{
         Wdata = reshape(Wdata,:,nex);
     end
     if isempty(W)
-        W = 0.0
+        W = zero(T)
     elseif length(W)>1
         W     = reshape(W,:,nex)
     end
