@@ -11,5 +11,5 @@ include("convFFTKernelTest.jl")
 end
 
 @testset "convGEMMKernel" begin
-include("convFFTKernelTest.jl")
+include("convGEMMKernelTest.jl")
 end
