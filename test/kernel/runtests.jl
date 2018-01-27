@@ -9,3 +9,7 @@ end
 @testset "convFFTKernel" begin
 include("convFFTKernelTest.jl")
 end
+
+@testset "convGEMMKernel" begin
+include("convFFTKernelTest.jl")
+end

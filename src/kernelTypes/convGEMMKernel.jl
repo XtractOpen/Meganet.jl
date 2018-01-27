@@ -15,9 +15,9 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T}
 	nex   = div(numel(Y),prod(nImgIn(this)))
     # compute convolution
 	Y     = reshape(Y,nImg[1],nImg[2],this.sK[3],nex);
-    AY    = zeros(eltype(Y),nImg[1]*nImg[2],this.sK[4],nex);
-	aux     = zeros(eltype(Y),nImg[1],nImg[2],this.sK[3]);
-    AYk   = zeros(eltype(Y),nImg[1]*nImg[2],this.sK[4]);
+    AY    = zeros(T,nImg[1]*nImg[2],this.sK[4],nex);
+	aux   = zeros(T,nImg[1],nImg[2],this.sK[3]);
+    AYk   = zeros(T,nImg[1]*nImg[2],this.sK[4]);
 	### reshape the kernels for gemm!:
 	K = reshape(theta,tuple(sK...));
 	KK = Array{Array{T,2}}(sK[1],sK[2]);
@@ -28,11 +28,11 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T}
 	end
 	shiftX = [0;-1;0;0;1;0];
 	shiftT = [1;0;0;0;0;-1];
-	
+
     for k = 1:nex
 		AYk = multConv2Dblock(Y,KK, AYk,aux,shiftX,shiftT,k);
 		@inbounds AY[:,:,k] = AYk;
-		AYk[:] = 0.0;
+		AYk[:] = zero(T)
 	end
     AY = reshape(AY,:,nex);
     return AY
@@ -47,7 +47,7 @@ function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T}
 	aux     = zeros(T,nImg[1],nImg[2],sK[4]);
 	ATZ   = zeros(T,nImg[1]*nImg[2],sK[3],nex);
 	ATZk  = zeros(T,nImg[1]*nImg[2],sK[3]);
-    
+
 	### reshape the kernels for gemm!:
 	KK = Array{Array{T,2}}(sK[1],sK[2]);
 	for k1 = 1:sK[1]
@@ -62,12 +62,12 @@ function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T}
     for k = 1:nex
 		ATZk = multConv2Dblock(Z,KK, ATZk,aux,shiftX,shiftT,k);
 		@inbounds ATZ[:,:,k] = ATZk;
-		ATZk[:] = 0.0;
+		ATZk[:] = zero(T)
 	end
     ATZ = reshape(ATZ,:,nex);
     return ATZ
 end
-	
+
 function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing) where {T}
     nex    =  div(numel(Y),nFeatIn(this));
     Z      = Amv(this,dtheta,Y);
@@ -75,7 +75,7 @@ function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy,Y::Array{T},tem
 end
 
 function JthetaTmv(this::convGEMMKernel{T},Z::Array{T},dummy,Y::Array{T}) where {T}
-     # derivative of Z*(A(theta)*Y) w.r.t. theta 
+     # derivative of Z*(A(theta)*Y) w.r.t. theta
 	sK = this.sK;
 	nImg = this.nImg;
 	nex   = div(numel(Y),prod(nImgIn(this)))
@@ -156,7 +156,7 @@ for p = 1:2:2*kernelWidth
 				if it <= nImg1
 					@inbounds t[it:nImg1,jt,cc] = 0.0;
 				end
-				jt+=1;jx+=1;	
+				jt+=1;jx+=1;
 			end
 			if jt <= nImg2
 				@inbounds t[:,jt:nImg2,cc] = 0.0;
@@ -187,8 +187,8 @@ function transposeTest()
 	ATZ = ATmv(Kernel2,K,Z);
 	println(vecdot(Z,AY));
 	println(vecdot(ATZ,Y));
-	
+
 	println(vecdot(Z,Jthetamv(Kernel2,K,[],Y)));
 	println(vecdot(K,JthetaTmv(Kernel2,Z,[],Y)));
-	
+
 end
