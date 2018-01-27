@@ -1,7 +1,7 @@
 export normLayer, getBatchNormLayer, getTVNormLayer, getNormLayer
 
 mutable struct normLayer{T} <: AbstractMeganetElement{T}
-    nData        # size of data #pixels x #channels x #examples
+    nData   ::Array{Int,1}     # size of data #pixels x #channels x #examples
     doNorm  ::Int  # specifies dimensions along which to normalize
     eps		::T          # smoothing factor
     # normLayer(nData::Array{Int},doNorm=2,eps=convert(T,1e-3)) = new{Float32}(nData,doNorm,eps)
@@ -31,25 +31,27 @@ function getTVNormLayer(TYPE::Type,nData;eps = convert(TYPE,1e-3),isTrainable::B
     end
 end
 
-function apply(this::normLayer,theta::Array{T},Y::Array{T},doDerivative=true) where {T <: Number}
+function apply(this::normLayer{T},theta::Array{T},Yin::Array{T},doDerivative=true) where {T <: Number}
 
     # first organize Y with channels
-    nf  = this.nData[2]
-    nex = div(length(Y),nFeatIn(this))
-    Y = reshape(Y,:,nf,nex)
+    nf  = this.nData[2]::Int
+    nex = div(length(Yin),nFeatIn(this))::Int
+    Y = reshape(Yin,:,nf,nex)
 
-    dA = []
+    dA = (T)[]
 
     # subtract mean across pixels
     Ya = mean(Y,this.doNorm)
     Y  = Y.-Ya
+    # Y .-= Ya #TODO: This line is more efficient, but tests do not want Y to change. Why dont we want Y to change in place?
+
     # normalize
     S2 = mean(Y.^2,this.doNorm)
-    Y  = Y ./ sqrt.(S2+this.eps)
+    Y ./= sqrt.(S2+this.eps)
 
-    Y = reshape(Y,:,nex)
+    Yout = reshape(Y,:,nex)
 
-    return Y, Y, dA
+    return Yout, Yout, dA
 end
 
 function nTheta(this::normLayer)
