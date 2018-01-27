@@ -68,17 +68,30 @@ function Jthetamv(this::SparseKernel,dtheta,theta,Y,tmp=nothing)
     return getOp(this,dtheta)*Y
 end
 
-function JthetaTmv(this::SparseKernel,Z,theta,Y,tmp=nothing)
-    Z = reshape(Z,this.nK[1],:)
-    Y = reshape(Y,this.nK[2],:)
+function JthetaTmv_old{T}(this::SparseKernel{T}, Z_in, theta, Y_in, tmp=nothing)
+    Z = reshape(Z_in, this.nK[1], :)
+    Y = reshape(Y_in, this.nK[2], :)
     #t = sum(Z[this.ival,:] .* Y[this.jval,:],2)
 
-    t = zeros(length(this.ival))
+    t = zeros(T, length(this.ival))
     for j=1:size(Z,2)
-        for i=1:length(this.ival)
+        @simd for i=1:length(this.ival)
             @inbounds t[i] += Z[this.ival[i],j] * Y[this.jval[i],j]
         end
     end
 
-    return this.Qs'*t;
+    return this.Qs'*t
+end
+
+function JthetaTmv{T}(this::SparseKernel{T}, Z_in, theta, Y_in, tmp=nothing)
+    Z = reshape(Z_in, this.nK[1], :)
+    Y = reshape(Y_in, this.nK[2], :)
+    #t = sum(Z[this.ival,:] .* Y[this.jval,:],2)
+
+    t = zeros(T, length(this.ival))
+    for j=1:size(Z,2)
+       @views t .+= Z[this.ival, j] .* Y[this.jval, j]
+    end
+
+    return this.Qs'*t
 end
