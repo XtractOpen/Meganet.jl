@@ -82,14 +82,9 @@ end
 
 function initTheta(this::DoubleSymLayer{T})  where {T<:Number}
     theta = [vec(initTheta(this.K));
-<<<<<<< HEAD
-             convert(T,0.1)*ones(T,size(this.Bin,2),1);
-             convert(T,0.1)*ones(T,size(this.Bout,2),1);
-=======
-             T(0.1)*ones(T,size(this.Bin,2),1);
-             T(0.1)*ones(T,size(this.Bout,2),1);
->>>>>>> 25c678de7099c16974ffa1b46895b7340c2eab94
-             initTheta(this.nLayer)];
+    T(0.1)*ones(T,size(this.Bin,2),1);
+    T(0.1)*ones(T,size(this.Bout,2),1);
+    initTheta(this.nLayer)];
     return theta
 end
 

@@ -16,11 +16,7 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T<:Numb
     # compute convolution
 	Y     = reshape(Y,nImg[1],nImg[2],this.sK[3],nex);
     AY    = zeros(T,nImg[1]*nImg[2],this.sK[4],nex);
-<<<<<<< HEAD
 	aux   = zeros(T,nImg[1],nImg[2],this.sK[3]);
-=======
-	aux     = zeros(T,nImg[1],nImg[2],this.sK[3]);
->>>>>>> 25c678de7099c16974ffa1b46895b7340c2eab94
     AYk   = zeros(T,nImg[1]*nImg[2],this.sK[4]);
 	### reshape the kernels for gemm!:
 	K = reshape(theta,tuple(sK...));
@@ -72,7 +68,7 @@ function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T<:Num
     return ATZ
 end
 
-function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing) where {T<:Number}
+function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy::Array{T},Y::Array{T},temp=nothing) where {T<:Number}
     nex    =  div(numel(Y),nFeatIn(this));
     Z      = Amv(this,dtheta,Y);
     return Z
