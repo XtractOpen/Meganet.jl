@@ -1,14 +1,14 @@
 export convGEMMKernel,Amv,ATmv,transposeTest,getConvGEMMKernel
 
 mutable struct convGEMMKernel{T} <: abstractConvKernel{T}
-    nImg
-    sK
+    nImg :: Array{Int,1}
+    sK   :: Array{Int,1}
 end
 function getConvGEMMKernel(TYPE::Type,nImg,sK)
 	return convGEMMKernel{TYPE}(copy(nImg),copy(sK));
 end
 
-function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T}
+function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T<:Number}
     ## We assume that the data Y is held in the order XYCN.
 	sK = this.sK;
 	nImg = this.nImg;
@@ -16,7 +16,11 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T}
     # compute convolution
 	Y     = reshape(Y,nImg[1],nImg[2],this.sK[3],nex);
     AY    = zeros(T,nImg[1]*nImg[2],this.sK[4],nex);
+<<<<<<< HEAD
 	aux   = zeros(T,nImg[1],nImg[2],this.sK[3]);
+=======
+	aux     = zeros(T,nImg[1],nImg[2],this.sK[3]);
+>>>>>>> 25c678de7099c16974ffa1b46895b7340c2eab94
     AYk   = zeros(T,nImg[1]*nImg[2],this.sK[4]);
 	### reshape the kernels for gemm!:
 	K = reshape(theta,tuple(sK...));
@@ -38,7 +42,7 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T}
     return AY
 end
 
-function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T}
+function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T<:Number}
 	nImg  = this.nImg;
 	sK    = this.sK;
     nex   =  div(numel(Z),prod(nImgOut(this)));
@@ -68,13 +72,13 @@ function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T}
     return ATZ
 end
 
-function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing) where {T}
+function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing) where {T<:Number}
     nex    =  div(numel(Y),nFeatIn(this));
     Z      = Amv(this,dtheta,Y);
     return Z
 end
 
-function JthetaTmv(this::convGEMMKernel{T},Z::Array{T},dummy,Y::Array{T}) where {T}
+function JthetaTmv(this::convGEMMKernel{T},Z::Array{T},dummy::Array{T},Y::Array{T}) where {T<:Number}
      # derivative of Z*(A(theta)*Y) w.r.t. theta
 	sK = this.sK;
 	nImg = this.nImg;
@@ -110,7 +114,7 @@ end
 
 
 
-function getColumn!(Z::Array{T},Zk::Array{T},k::Int64) where {T}
+function getColumn!(Z::Array{T},Zk::Array{T},k::Int64) where {T<:Number}
 for c=1:size(Z,2)
 	for j=1:size(Z,1)
 		@inbounds	Zk[j,c] = Z[j,c,k];
@@ -118,7 +122,7 @@ for c=1:size(Z,2)
 end
 end
 
-function multConv2Dblock(x::Array{T},K::Array, y::Array{T}, t::Array{T},shiftX,shiftT,imIdx;doDerivative = 0) where {T}
+function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, t::Array{T},shiftX,shiftT,imIdx;doDerivative = 0) where {T<:Number}
 ## y = K*x
 ## K - 3X3 array of Arrays
 ## x - a vector of length |nImgag+2|*cin (zero padded)
@@ -175,20 +179,20 @@ return y;
 end
 
 
-function transposeTest()
-	nImage = [16,16];
-	sK = [3,3,2,4];
-	TYPE = Float64;
-	K = randn(TYPE,tuple(sK...));
-	Y = randn(TYPE,nImage[1],nImage[2],sK[3],2);
-	Z = randn(TYPE,nImage[1],nImage[2],sK[4],2);
-	Kernel2 = convGEMMKernel(nImage,sK);
-	AY = Amv(Kernel2,K,Y);
-	ATZ = ATmv(Kernel2,K,Z);
-	println(vecdot(Z,AY));
-	println(vecdot(ATZ,Y));
-
-	println(vecdot(Z,Jthetamv(Kernel2,K,[],Y)));
-	println(vecdot(K,JthetaTmv(Kernel2,Z,[],Y)));
-
-end
+# function transposeTest()
+# 	nImage = [16,16];
+# 	sK = [3,3,2,4];
+# 	TYPE = Float64;
+# 	K = randn(TYPE,tuple(sK...));
+# 	Y = randn(TYPE,nImage[1],nImage[2],sK[3],2);
+# 	Z = randn(TYPE,nImage[1],nImage[2],sK[4],2);
+# 	Kernel2 = convGEMMKernel(nImage,sK);
+# 	AY = Amv(Kernel2,K,Y);
+# 	ATZ = ATmv(Kernel2,K,Z);
+# 	println(vecdot(Z,AY));
+# 	println(vecdot(ATZ,Y));
+#
+# 	println(vecdot(Z,Jthetamv(Kernel2,K,[],Y)));
+# 	println(vecdot(K,JthetaTmv(Kernel2,Z,[],Y)));
+#
+# end

@@ -1,11 +1,11 @@
 export singleLayer,getSingleLayer
 
 mutable struct singleLayer{T} <: AbstractMeganetElement{T}
-        activation  # activation function
+        activation :: Function # activation function
         K           # transformation type
-        nLayer      # normalization layer
-        Bin         # bias inside nonlinearity
-        Bout        # bias outside nonlinearity
+        nLayer     :: Union{NN{T}, normLayer{T}, AffineScalingLayer{T}} # normalization layer
+        Bin        :: Array{T} # bias inside nonlinearity
+        Bout       :: Array{T} # bias outside nonlinearity
         # singleLayer{T}(K,nLayer;Bin=zeros(T,nFeatOut(K),0),Bout=zeros(T,nFeatOut(K),0),activation=tanhActivation) =
 
 end
