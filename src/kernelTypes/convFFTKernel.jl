@@ -2,9 +2,9 @@ export convFFTKernel, getEigs,getConvFFTKernel
 ## For the functions nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta : see abstractConvKernel.jl
 ## All convKernel types are assumed to have fields nImage and sK
 mutable struct convFFTKernel{T} <: abstractConvKernel{T}
-    nImg
-    sK
-    S
+    nImg :: Array{Int,1}
+    sK   :: Array{Int,1}
+    S    :: Array{Complex{T},2}
 end
 
 function getConvFFTKernel(TYPE::Type,nImg,sK)
@@ -25,7 +25,7 @@ function getEigs(TYPE,nImg,sK)
 end
 
 export Amv
-function Amv(this::convFFTKernel{T},theta::Array{T},Y::Array{T}) where {T}
+function Amv(this::convFFTKernel{T},theta::Array{T},Y::Array{T}) where {T<:Number}
 
     nex   = div(numel(Y),prod(nImgIn(this)))
 
@@ -52,7 +52,7 @@ function Amv(this::convFFTKernel{T},theta::Array{T},Y::Array{T}) where {T}
     return Y
 end
 
-function ATmv(this::convFFTKernel{T},theta::Array{T},Z::Array{T}) where {T}
+function ATmv(this::convFFTKernel{T},theta::Array{T},Z::Array{T}) where {T<:Number}
     
     nex   =  div(numel(Z),prod(nImgOut(this)));
     ATY   = zeros(Complex{T},tuple([nImgIn(this); nex]...));
@@ -81,7 +81,7 @@ function ATmv(this::convFFTKernel{T},theta::Array{T},Z::Array{T}) where {T}
     return ATY
 end
 
-function Jthetamv(this::convFFTKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing) where {T}
+function Jthetamv(this::convFFTKernel{T},dtheta::Array{T},dummy::Array{T},Y::Array{T},temp=nothing) where {T<:Number}
 
     nex    =  div(numel(Y),nFeatIn(this));
     Y      = reshape(Y,:,nex);
@@ -89,7 +89,7 @@ function Jthetamv(this::convFFTKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp
     return Z
 end
 
-function JthetaTmv(this::convFFTKernel{T},Z::Array{T},dummy,Y::Array{T}) where {T}
+function JthetaTmv(this::convFFTKernel{T},Z::Array{T},dummy::Array{T},Y::Array{T}) where {T<:Number}
     #  derivative of Z*(A(theta)*Y) w.r.t. theta
 
     nex  =  div(numel(Y),nFeatIn(this));
@@ -110,7 +110,7 @@ function JthetaTmv(this::convFFTKernel{T},Z::Array{T},dummy,Y::Array{T}) where {
     return dtheta
 end
 
-function hadamardSum(sumT::Array{T},Yh::Array{T},Sk::Array{T}) where {T}
+function hadamardSum(sumT::Array{T},Yh::Array{T},Sk::Array{T}) where {T<:Number}
     sumT .= 0.0;
     for i4 = 1:size(Yh,4)
         for i3 = 1:size(Yh,3)
