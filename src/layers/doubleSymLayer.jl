@@ -5,10 +5,10 @@ export DoubleSymLayer,getDoubleSymLayer
 
  Y(theta,Y0) = K(th1)'(activation( K(th1)\*Y0 + trafo.Bin\*th2))) + trafo.Bout\*th3
 """
-mutable struct DoubleSymLayer{T} <: AbstractMeganetElement{T}
+mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{NN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
     activation  :: Function   # activation function
-    K           :: Union{DenseKernel{T}, abstractConvKernel{T}, SparseKernel{T}}   # Kernel model, e.g., convMod
-    nLayer      :: Union{NN{T}, normLayer{T}, AffineScalingLayer{T}}   # normalization layer
+    K           :: TK   # Kernel model, e.g., convMod
+    nLayer      :: TN   # normalization layer
     Bin         :: Array{T}   # Bias inside the nonlinearity
     Bout        :: Array{T}   # bias outside the nonlinearity
 end
@@ -19,7 +19,7 @@ function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T},
                            activation=tanhActivation) where {T <: Number}
     BinT = convert.(T, Bin)
     BoutT = convert.(T, Bout)
-    return DoubleSymLayer{TYPE}(activation,K,nLayer,Bin,Bout);
+    return DoubleSymLayer(activation,K,nLayer,Bin,Bout);
 
 end
 

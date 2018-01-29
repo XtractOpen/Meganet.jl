@@ -1,30 +1,30 @@
-export nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta
+export nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta, AbstractConvKernel
 
-abstract type abstractConvKernel{T} <: AbstractMeganetElement{T} end
+abstract type AbstractConvKernel{T} <: AbstractMeganetElement{T} end
 
 ## All convKernel types are assumed to have fields nImage (size of the image) and sK (size of the Convolution Kernel)
 
-function nImgIn(this::abstractConvKernel)
+function nImgIn(this::AbstractConvKernel)
     return [this.nImg[1]; this.nImg[2]; this.sK[3]]
 end
 
-function nImgOut(this::abstractConvKernel)
+function nImgOut(this::AbstractConvKernel)
    return [this.nImg[1]; this.nImg[2]; this.sK[4]]
 end
 
-function nFeatIn(this::abstractConvKernel)
+function nFeatIn(this::AbstractConvKernel)
     return prod(nImgIn(this));
 end
-function nFeatOut(this::abstractConvKernel)
+function nFeatOut(this::AbstractConvKernel)
    return prod(nImgOut(this));
 end
 
-function nTheta(this::abstractConvKernel)
+function nTheta(this::AbstractConvKernel)
    return prod(this.sK);
 end
 
 
-function getOp(this::abstractConvKernel{T},theta::Array{T}) where {T <: Number}
+function getOp(this::AbstractConvKernel{T},theta::Array{T}) where {T <: Number}
 
     m = prod(nImgOut(this))
     n = prod(nImgIn(this))
@@ -36,7 +36,7 @@ function getOp(this::abstractConvKernel{T},theta::Array{T}) where {T <: Number}
     return A
 end
 
-function initTheta(this::abstractConvKernel{T}) where {T <: Number}
+function initTheta(this::AbstractConvKernel{T}) where {T <: Number}
 
     sd    = T(0.1);
     theta = sd*randn(T,prod(this.sK));

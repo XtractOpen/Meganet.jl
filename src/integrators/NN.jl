@@ -6,7 +6,7 @@ NN Neural Network block
  Y_k+1 = layer{k}(theta{k},Y_k)
 """
 mutable struct NN{T} <: AbstractMeganetElement{T}
-    layers  # layers of Neural Network, cell array
+    layers  ::Array{AbstractMeganetElement{T}, 1} # layers of Neural Network, cell array
     outTimes
     Q
 end

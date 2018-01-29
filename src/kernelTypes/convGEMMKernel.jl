@@ -1,6 +1,6 @@
 export convGEMMKernel,Amv,ATmv,transposeTest,getConvGEMMKernel
 
-mutable struct convGEMMKernel{T} <: abstractConvKernel{T}
+mutable struct convGEMMKernel{T} <: AbstractConvKernel{T}
     nImg :: Array{Int,1}
     sK   :: Array{Int,1}
 end
