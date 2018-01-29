@@ -29,13 +29,13 @@ end
 
 
 export Amv
-function Amv(this::convCircKernel{T},theta::Array{T},Y::Array{T}) where {T<:Number}
+function Amv(this::convCircKernel{T},theta::Array{T},Yin::Array{T}) where {T<:Number}
 
     nex   = div(length(Y),prod(nImgIn(this)))
 
     n     = nImgIn(this);
     
-    Y     = reshape(Y,(n[1],n[2],this.sK[3],nex))
+    Y     = reshape(Yin,(n[1],n[2],this.sK[3],nex))
     # compute convolution
     K = zeros(n[1],n[2],this.sK[3])
     
@@ -49,11 +49,11 @@ function Amv(this::convCircKernel{T},theta::Array{T},Y::Array{T}) where {T<:Numb
 end
 
 export ATmv
-function ATmv(this::convCircKernel{T},theta::Array{T},Z::Array{T}) where {T<:Number}
+function ATmv(this::convCircKernel{T},theta::Array{T},Zin::Array{T}) where {T<:Number}
     
     nex   =  div(numel(Z),prod(nImgIn(this)))
     n     = nImgIn(this)
-    Z     = reshape(Z,(n[1],n[2],this.sK[3],nex));
+    Z     = reshape(Zin,(n[1],n[2],this.sK[3],nex));
     # compute convolution T
     K = zeros(n[1],n[2],this.sK[3])
     K[this.iK] = theta
@@ -65,23 +65,23 @@ function ATmv(this::convCircKernel{T},theta::Array{T},Z::Array{T}) where {T<:Num
     return Y
 end
 
-function Jthetamv(this::convCircKernel{T},dtheta::Array{T},dummy::Array{T},Y::Array{T},temp=nothing) where {T<:Number}
+function Jthetamv(this::convCircKernel{T},dtheta::Array{T},dummy::Array{T},Yin::Array{T},temp=nothing) where {T<:Number}
 
     nex    =  div(numel(Y),nFeatIn(this))
-    Y      = reshape(Y,:,nex)
+    Y      = reshape(Yin,:,nex)
     Z      = Amv(this,dtheta,Y)
     return Z
 end
 
-function JthetaTmv(this::convCircKernel{T},Z::Array{T},dummy::Array{T},Y::Array{T}) where {T<:Number}
+function JthetaTmv(this::convCircKernel{T},Zin::Array{T},dummy::Array{T},Yin::Array{T}) where {T<:Number}
     #  derivative of Z*(A(theta)*Y) w.r.t. theta
 
     nex  =  div(numel(Y),nFeatIn(this))
 
     n  = nImgIn(this)
     
-    Z     = reshape(Z,n[1],n[2],this.sK[3],nex)
-    Y     = reshape(Y,n[1],n[2],this.sK[3],nex)
+    Z     = reshape(Zin,n[1],n[2],this.sK[3],nex)
+    Y     = reshape(Yin,n[1],n[2],this.sK[3],nex)
     
     Zh = fft(Z,(1,2,3))
     Yh = fft(Y,(1,2,3))
