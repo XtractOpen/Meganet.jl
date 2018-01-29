@@ -61,7 +61,7 @@ end
 
 function initTheta(this::AffineScalingLayer{T}) where {T <: Number}
     s2,b2 = splitWeights(this,ones(T,nTheta(this)))
-    return  [s2[:]; 0*b2[:]]
+    return  [vec(s2); convert(T,0.)*vec(b2)]
 end
 
 function Jthetamv(this::AffineScalingLayer{T},dtheta::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}

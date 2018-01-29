@@ -16,7 +16,7 @@ end
 
 
 import Base.display
-display(this::SoftmaxLoss) = println("SoftmaxLoss(shift$(this.shift),theta=$(this.theta),addBias=$(this.addBias))")
+display(this::SoftmaxLoss) = println("SoftmaxLoss(shift=$(this.shift),theta=$(this.theta),addBias=$(this.addBias))")
 
 function getMisfit(this::SoftmaxLoss{T},W::Array{T},Y::Array{T},C::Array{T},doDY=true,doDW=true) where {T}
 
@@ -78,7 +78,7 @@ function getLabels(this::SoftmaxLoss,W::Array{T},Y=nothing) where {T}
         ny = size(Y); nf = ny[1]; nex = ny[2]
         if this.addBias
             W      = reshape(W,:,nf+1)
-            Y     = [Y; ones(1,nex)]
+            Y     = [Y; ones(T,1,nex)]
         end
         Y     = Y - this.shift
         S      = exp.(W*Y)

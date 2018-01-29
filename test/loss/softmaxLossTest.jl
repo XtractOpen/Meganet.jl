@@ -1,15 +1,17 @@
 using Meganet
 using Base.Test
 
-S = getSoftMaxLoss(Float64)
-display(S)
+for TYPE=[Float64,Float32]
+    S = getSoftMaxLoss(TYPE)
+    display(S)
 
-@testset "softmax (with bias)" begin
-    testLossFunction(S)
-end
+    @testset "softmax (with bias) $TYPE" begin
+        testLossFunction(S,out=false)
+    end
 
-S = getSoftMaxLoss(Float64)
-S.addBias = false
-@testset "softmax (no bias)" begin
-    testLossFunction(S)
+    S = getSoftMaxLoss(TYPE)
+    S.addBias = false
+    @testset "softmax (no bias) $TYPE" begin
+        testLossFunction(S,out=false)
+    end
 end

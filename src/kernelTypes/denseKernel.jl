@@ -20,25 +20,25 @@ function nFeatOut(kernel::DenseKernel)
     return kernel.nK[1]
 end
 
-function initTheta(kernel::DenseKernel)
-    return randn(nTheta(kernel))
+function initTheta(kernel::DenseKernel{T}) where {T<:Number}
+    return randn(T,nTheta(kernel))
 end
 
-function getOp(kernel::DenseKernel,theta)
+function getOp(kernel::DenseKernel{T},theta::Array{T}) where {T<:Number}
     return reshape(theta,kernel.nK[1],kernel.nK[2])
 end
 
-function Jthetamv(kernel::DenseKernel,dtheta,theta,Y,tmp=nothing)
-    nex    =  div(length(Y),nFeatIn(kernel))
-    Y      = reshape(Y,:,nex)
+function Jthetamv(kernel::DenseKernel{T},dtheta::Array{T},theta::Array{T},Yin::Array{T},tmp=nothing) where {T<:Number}
+    nex    =  div(length(Yin),nFeatIn(kernel))
+    Y      = reshape(Yin,:,nex)
     return  getOp(kernel,dtheta)*Y
 end
 
 
-function JthetaTmv(kernel::DenseKernel,Z,theta,Y,tmp=nothing)
+function JthetaTmv(kernel::DenseKernel{T},Zin::Array{T},theta::Array{T},Yin::Array{T},tmp=nothing) where {T<:Number}
 # Jacobian transpose matvec.
-    nex    =  div(length(Y),nFeatIn(kernel))
-    Y      = reshape(Y,:,nex)
-    Z      = reshape(Z,:,nex)
+    nex    =  div(length(Yin),nFeatIn(kernel))
+    Y      = reshape(Yin,:,nex)
+    Z      = reshape(Zin,:,nex)
     return  Z*Y'
 end

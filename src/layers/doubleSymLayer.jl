@@ -17,10 +17,10 @@ end
 function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T},
                            Bin=zeros(nFeatOut(K),0),Bout=zeros(nFeatIn(K),0),
                            activation=tanhActivation) where {T <: Number}
-    BinT = convert(Array{T}, Bin)
-    BoutT = convert(Array{T}, Bout)
+    BinT = convert.(T, Bin)
+    BoutT = convert.(T, Bout)
     return DoubleSymLayer{TYPE}(activation,K,nLayer,Bin,Bout);
-				   
+
 end
 
 function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T<:Number}
@@ -82,9 +82,9 @@ end
 
 function initTheta(this::DoubleSymLayer{T})  where {T<:Number}
     theta = [vec(initTheta(this.K));
-             T(0.1)*ones(T,size(this.Bin,2),1);
-             T(0.1)*ones(T,size(this.Bout,2),1);
-             initTheta(this.nLayer)];
+    T(0.1)*ones(T,size(this.Bin,2),1);
+    T(0.1)*ones(T,size(this.Bout,2),1);
+    initTheta(this.nLayer)];
     return theta
 end
 
@@ -94,7 +94,7 @@ function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Ar
     th1, th2,th3,th4    = splitWeights(this,theta)
     dth1,dth2,dth3,dth4 = splitWeights(this,dtheta)
 
-	Kop    = getOp(this.K,th1)    
+	Kop    = getOp(this.K,th1)
     dKop   = getOp(this.K,dth1)
     dY     = dKop*Y
 
@@ -164,7 +164,7 @@ function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Ar
     dth3      = vec(sum(this.Bout'*Z,2))
     dAZ       = dA.*(Kop*Z)
     dth2      = vec(sum(this.Bin'*dAZ,2))
-   
+
     dth4,dAZ  = JTmv(this.nLayer,dAZ,zeros(T,0),th4,Kop*Y,tmp[1])
 
     dth1      = JthetaTmv(this.K,A,zeros(T,0),Z)

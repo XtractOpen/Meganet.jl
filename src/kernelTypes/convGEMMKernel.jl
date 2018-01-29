@@ -16,7 +16,7 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T<:Numb
     # compute convolution
 	Y     = reshape(Y,nImg[1],nImg[2],this.sK[3],nex);
     AY    = zeros(T,nImg[1]*nImg[2],this.sK[4],nex);
-	aux     = zeros(T,nImg[1],nImg[2],this.sK[3]);
+	aux   = zeros(T,nImg[1],nImg[2],this.sK[3]);
     AYk   = zeros(T,nImg[1]*nImg[2],this.sK[4]);
 	### reshape the kernels for gemm!:
 	K = reshape(theta,tuple(sK...));
@@ -28,11 +28,11 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T<:Numb
 	end
 	shiftX = [0;-1;0;0;1;0];
 	shiftT = [1;0;0;0;0;-1];
-	
+
     for k = 1:nex
 		AYk = multConv2Dblock(Y,KK, AYk,aux,shiftX,shiftT,k);
 		@inbounds AY[:,:,k] = AYk;
-		AYk[:] = 0.0;
+		AYk[:] = zero(T)
 	end
     AY = reshape(AY,:,nex);
     return AY
@@ -47,7 +47,7 @@ function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T<:Num
 	aux     = zeros(T,nImg[1],nImg[2],sK[4]);
 	ATZ   = zeros(T,nImg[1]*nImg[2],sK[3],nex);
 	ATZk  = zeros(T,nImg[1]*nImg[2],sK[3]);
-    
+
 	### reshape the kernels for gemm!:
 	KK = Array{Array{T,2}}(sK[1],sK[2]);
 	for k1 = 1:sK[1]
@@ -62,20 +62,20 @@ function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T<:Num
     for k = 1:nex
 		ATZk = multConv2Dblock(Z,KK, ATZk,aux,shiftX,shiftT,k);
 		@inbounds ATZ[:,:,k] = ATZk;
-		ATZk[:] = 0.0;
+		ATZk[:] = zero(T)
 	end
     ATZ = reshape(ATZ,:,nex);
     return ATZ
 end
-	
-function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy,Y::Array{T},temp=nothing) where {T<:Number}
+
+function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy::Array{T},Y::Array{T},temp=nothing) where {T<:Number}
     nex    =  div(numel(Y),nFeatIn(this));
     Z      = Amv(this,dtheta,Y);
     return Z
 end
 
 function JthetaTmv(this::convGEMMKernel{T},Z::Array{T},dummy::Array{T},Y::Array{T}) where {T<:Number}
-     # derivative of Z*(A(theta)*Y) w.r.t. theta 
+     # derivative of Z*(A(theta)*Y) w.r.t. theta
 	sK = this.sK;
 	nImg = this.nImg;
 	nex   = div(numel(Y),prod(nImgIn(this)))
@@ -156,7 +156,7 @@ for p = 1:2:2*kernelWidth
 				if it <= nImg1
 					@inbounds t[it:nImg1,jt,cc] = 0.0;
 				end
-				jt+=1;jx+=1;	
+				jt+=1;jx+=1;
 			end
 			if jt <= nImg2
 				@inbounds t[:,jt:nImg2,cc] = 0.0;
@@ -175,20 +175,20 @@ return y;
 end
 
 
-function transposeTest()
-	nImage = [16,16];
-	sK = [3,3,2,4];
-	TYPE = Float64;
-	K = randn(TYPE,tuple(sK...));
-	Y = randn(TYPE,nImage[1],nImage[2],sK[3],2);
-	Z = randn(TYPE,nImage[1],nImage[2],sK[4],2);
-	Kernel2 = convGEMMKernel(nImage,sK);
-	AY = Amv(Kernel2,K,Y);
-	ATZ = ATmv(Kernel2,K,Z);
-	println(vecdot(Z,AY));
-	println(vecdot(ATZ,Y));
-	
-	println(vecdot(Z,Jthetamv(Kernel2,K,[],Y)));
-	println(vecdot(K,JthetaTmv(Kernel2,Z,[],Y)));
-	
-end
+# function transposeTest()
+# 	nImage = [16,16];
+# 	sK = [3,3,2,4];
+# 	TYPE = Float64;
+# 	K = randn(TYPE,tuple(sK...));
+# 	Y = randn(TYPE,nImage[1],nImage[2],sK[3],2);
+# 	Z = randn(TYPE,nImage[1],nImage[2],sK[4],2);
+# 	Kernel2 = convGEMMKernel(nImage,sK);
+# 	AY = Amv(Kernel2,K,Y);
+# 	ATZ = ATmv(Kernel2,K,Z);
+# 	println(vecdot(Z,AY));
+# 	println(vecdot(ATZ,Y));
+#
+# 	println(vecdot(Z,Jthetamv(Kernel2,K,[],Y)));
+# 	println(vecdot(K,JthetaTmv(Kernel2,Z,[],Y)));
+#
+# end

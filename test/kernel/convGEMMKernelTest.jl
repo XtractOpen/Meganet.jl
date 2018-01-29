@@ -1,8 +1,12 @@
 using Base.Test
 using Meganet
+using LinearOperators
 
-for TYPE = [Float64,Float32]
-    K = getDenseKernel(TYPE,[24;14])
+
+nImg = [8,10]
+sK   = [3,3,4,4]
+for TYPE=[Float64,Float32]
+    K = getConvGEMMKernel(TYPE,nImg,sK)
 
     @testset  "adjoint test $TYPE" begin
     theta = initTheta(K)
@@ -16,7 +20,7 @@ for TYPE = [Float64,Float32]
     @test norm(t1-t2)/norm(t1) < 1e3*eps(TYPE)
     end
 
-    @testset "derivative Test $TYPE" begin
+    @testset "derivative Test" begin
     th  = initTheta(K);
     dth = initTheta(K);
     nex = 1;
