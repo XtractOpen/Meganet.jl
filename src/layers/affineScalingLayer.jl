@@ -14,8 +14,8 @@ function getAffineScalingLayer(TYPE::Type, nData)
     return AffineScalingLayer{TYPE}(nData)
 end
 
-function splitWeights(this::AffineScalingLayer{T},theta::Array{T}) where {T <: Number}
-    theta = reshape(theta,:,2)
+function splitWeights(this::AffineScalingLayer{T},theta_in::Array{T}) where {T <: Number}
+    theta = reshape(theta_in,:,2)
     s2    = theta[:,1]
     b2    = theta[:,2]
     return s2, b2

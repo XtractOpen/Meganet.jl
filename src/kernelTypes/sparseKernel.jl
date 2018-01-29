@@ -3,8 +3,8 @@ export SparseKernel, getSparseKernel, getSparseConvKernel2D
 """
 kernel where weights parameterize entried of a sparse matrix
 """
-mutable struct SparseKernel{T}
-    nK::Array{Int}
+mutable struct SparseKernel{T} <: AbstractConvKernel{T}
+        nK::Array{Int}
         ival::Array{Int}
         jval::Array{Int}
         colptr::Array{Int}
@@ -55,20 +55,20 @@ function nFeatOut(this::SparseKernel)
     return this.nK[1]
 end
 
-function initTheta(this::SparseKernel{T}) where {T}
+function initTheta(this::SparseKernel{T}) where {T <: Number}
     return randn(T,nTheta(this))
 end
 
-function getOp(this::SparseKernel{T},theta::Array{T}) where {T}
+function getOp(this::SparseKernel{T},theta::Array{T}) where {T <: Number}
      this.nzval = this.Qs*vec(theta)
 	return SparseMatrixCSC(this.nK[1],this.nK[2],this.colptr,this.rowval,this.nzval)
 end
 
-function Jthetamv(this::SparseKernel,dtheta,theta,Y,tmp=nothing)
+function Jthetamv(this::SparseKernel,dtheta::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
     return getOp(this,dtheta)*Y
 end
 
-function JthetaTmv{T}(this::SparseKernel{T}, Z_in, theta, Y_in, tmp=nothing)
+function JthetaTmv(this::SparseKernel{T}, Z_in::Array{T}, theta::Array{T}, Y_in::Array{T}, tmp=nothing) where {T <: Number}
     Z = reshape(Z_in, this.nK[1], :)
     Y = reshape(Y_in, this.nK[2], :)
     #t = sum(Z[this.ival,:] .* Y[this.jval,:],2)
@@ -83,7 +83,7 @@ function JthetaTmv{T}(this::SparseKernel{T}, Z_in, theta, Y_in, tmp=nothing)
     return this.Qs'*t
 end
 
-function JthetaTmv_old{T}(this::SparseKernel{T}, Z_in, theta, Y_in, tmp=nothing)
+function JthetaTmv_old(this::SparseKernel{T}, Z_in::Array{T}, theta::Array{T}, Y_in::Array{T}, tmp=nothing) where {T <: Number}
     Z = reshape(Z_in, this.nK[1], :)
     Y = reshape(Y_in, this.nK[2], :)
     #t = sum(Z[this.ival,:] .* Y[this.jval,:],2)

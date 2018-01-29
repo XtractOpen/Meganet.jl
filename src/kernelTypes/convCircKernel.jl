@@ -1,7 +1,7 @@
 export convCircKernel ,getConvCircKernel
-## For the functions nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta : see abstractConvKernel.jl
+## For the functions nImgIn, nImgOut, nFeatIn, nFeatOut, nTheta, getOp, initTheta : see AbstractConvKernel.jl
 ## All convKernel types are assumed to have fields nImage and sK
-mutable struct convCircKernel{T} <: abstractConvKernel{T}
+mutable struct convCircKernel{T} <: AbstractConvKernel{T}
     nImg :: Array{Int,1}
     sK   :: Array{Int,1}
     iK   :: Array{Int,1}

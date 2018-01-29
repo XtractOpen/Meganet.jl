@@ -11,9 +11,9 @@ include("activations/tanhActivation.jl")
 include("integrators/NN.jl")
 include("integrators/connector.jl")
 include("integrators/ResNN.jl")
+include("kernelTypes/abstractConvKernel.jl");
 include("kernelTypes/denseKernel.jl")
 include("kernelTypes/sparseKernel.jl")
-include("kernelTypes/abstractConvKernel.jl");
 include("kernelTypes/convFFTKernel.jl");
 include("kernelTypes/convGEMMKernel.jl");
 include("kernelTypes/convCircKernel.jl");

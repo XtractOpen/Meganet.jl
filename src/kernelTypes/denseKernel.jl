@@ -1,7 +1,7 @@
 export DenseKernel, getOp, getDenseKernel
 
-mutable struct DenseKernel{T}
-    nK
+mutable struct DenseKernel{T} <: AbstractConvKernel{T}
+    nK :: Array{Int, 1}
 end
 
 function getDenseKernel(TYPE::Type,nK)
