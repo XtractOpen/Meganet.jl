@@ -7,7 +7,7 @@ export DoubleSymLayer,getDoubleSymLayer
 """
 mutable struct DoubleSymLayer{T} <: AbstractMeganetElement{T}
     activation  :: Function   # activation function
-    K              # Kernel model, e.g., convMod
+    K           :: Union{DenseKernel{T}, abstractConvKernel{T}, SparseKernel{T}}   # Kernel model, e.g., convMod
     nLayer      :: Union{NN{T}, normLayer{T}, AffineScalingLayer{T}}   # normalization layer
     Bin         :: Array{T}   # Bias inside the nonlinearity
     Bout        :: Array{T}   # bias outside the nonlinearity
@@ -25,7 +25,7 @@ end
 
 function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T<:Number}
 
-    th1 = theta[1:nTheta(this.K)]
+    th1 = theta[1:nTheta(this.K)::Int]
     cnt = length(th1)
     th2 = theta[cnt+(1:size(this.Bin,2))]
     cnt = cnt + length(th2)
@@ -37,7 +37,7 @@ function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T<:Number}
     return th1, th2, th3, th4
 end
 
-function apply(this::DoubleSymLayer{T},theta::Array{T},Y::Array{T},doDerivative=true)  where {T<:Number}
+function apply_old(this::DoubleSymLayer{T},theta::Array{T},Y::Array{T},doDerivative=true)  where {T<:Number}
 
     #QZ = []
     tmp = Array{Any}(2) # TODO: Should this be type T?
@@ -49,6 +49,33 @@ function apply(this::DoubleSymLayer{T},theta::Array{T},Y::Array{T},doDerivative=
     KY     = Kop*Y
 
     KY,dummy,tmp[1] = apply(this.nLayer,th4,KY)
+
+    Yt     = KY
+    if !isempty(theta2)
+     Yt .+= this.Bin*theta2
+    end
+    tmp[2] = copy(Yt)
+    Z,      = this.activation(Yt,doDerivative)
+    Z      = -(Kop'*Z)
+    if !isempty(theta3)
+        Z  .+= this.Bout*theta3
+    end
+
+    return Z, Z, tmp
+end
+
+function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T},doDerivative=true)  where {T<:Number}
+
+    #QZ = []
+    tmp = Array{Any}(2) # TODO: Should this be type T?
+    nex = div(length(Yin),nFeatIn(this))::Int
+    Y   = reshape(Yin,:,nex)
+
+    theta1,theta2,theta3,theta4 = splitWeights(this,theta)
+    Kop    = getOp(this.K,theta1)
+    KY     = Kop*Y
+
+    KY,dummy,tmp[1] = apply(this.nLayer,theta4,KY)
 
     Yt     = KY
     if !isempty(theta2)

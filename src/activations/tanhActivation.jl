@@ -24,7 +24,7 @@ A = tanh.(Y)
 if doDerivative
      dA = 1-A.^2
 else
-    dA = zeros(T,0)
+    dA = zeros(T,0,0)
 end
 return A,dA
 end
