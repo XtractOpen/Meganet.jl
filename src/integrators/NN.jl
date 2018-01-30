@@ -62,8 +62,7 @@ end
 
 
 # --------- forward problem ----------
-function apply(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T <: Number}
-    print(typeof(Y0))
+function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},doDerivative=true) where {T<:Number}
     Y::Array{T,2}  = copy(Y0)
     nex = div(length(Y),nFeatIn(this))::Int
     nt = length(this.layers)
@@ -86,6 +85,7 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where
         end
         cnt = cnt + ni
     end
+
     return Ydata,Y,tmp
 end
 

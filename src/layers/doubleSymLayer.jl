@@ -37,57 +37,27 @@ function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T<:Number}
     return th1, th2, th3, th4
 end
 
-function apply_old(this::DoubleSymLayer{T},theta::Array{T},Y::Array{T},doDerivative=true)  where {T<:Number}
+function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=true) where {T<:Number}
 
     #QZ = []
-    tmp = Array{Any}(2) # TODO: Should this be type T?
-    nex = div(length(Y),nFeatIn(this))
-    Y   = reshape(Y,:,nex)
-
-    theta1,theta2,theta3,th4 = splitWeights(this,theta)
-    Kop    = getOp(this.K,theta1)
-    KY     = Kop*Y
-
-    KY,dummy,tmp[1] = apply(this.nLayer,th4,KY)
-
-    Yt     = KY
-    if !isempty(theta2)
-     Yt .+= this.Bin*theta2
-    end
-    tmp[2] = copy(Yt)
-    Z,      = this.activation(Yt,doDerivative)
-    Z      = -(Kop'*Z)
-    if !isempty(theta3)
-        Z  .+= this.Bout*theta3
-    end
-
-    return Z, Z, tmp
-end
-
-function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T},doDerivative=true)  where {T<:Number}
-
-    #QZ = []
-    tmp = Array{Any}(2) # TODO: Should this be type T?
+    tmp = Array{Any}(2)
     nex = div(length(Yin),nFeatIn(this))::Int
     Y   = reshape(Yin,:,nex)
 
     theta1,theta2,theta3,theta4 = splitWeights(this,theta)
     Kop    = getOp(this.K,theta1)
     KY     = Kop*Y
-
     KY,dummy,tmp[1] = apply(this.nLayer,theta4,KY)
-
     Yt     = KY
     if !isempty(theta2)
      Yt .+= this.Bin*theta2
     end
     tmp[2] = copy(Yt)
-    Z,      = this.activation(Yt,doDerivative)
+    Z::Array{T,2},      = this.activation(Yt,doDerivative)
     Z      = -(Kop'*Z)
     if !isempty(theta3)
         Z  .+= this.Bout*theta3
     end
-
     return Z, Z, tmp
 end
 

@@ -20,14 +20,11 @@ Y     = randn(TYPE,nFeatIn(L),nex)
 
 # Warmup
 Yout2,Yout2,tmp2 = apply(L,theta,Y,true)
-Yout2,Yout2,tmp2 = Meganet.apply_old(L,theta,Y,true)
 
-
-@code_warntype Meganet.apply_old(L,theta,Y,true)
 @code_warntype apply(L,theta,Y,true)
 
 trial = @benchmark apply(L,theta,Y,true);
 
-# Meganet.updatehistory!(history, trial)
-# hist = JLD.load(history, "hist")
-# judge(hist)
+Meganet.updatehistory!(history, trial)
+hist = JLD.load(history, "hist")
+judge(hist)

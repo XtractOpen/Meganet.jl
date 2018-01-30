@@ -40,7 +40,7 @@ function apply(this::AffineScalingLayer{T},theta::Array{T},Yin::Array{T},doDeriv
 
     Yout = reshape(Yscaled,:,nex)
     Ydata = Yout
-    return Ydata, Y, dA
+    return Ydata, Yout, dA
 end
 
 function nTheta(this::AffineScalingLayer)
