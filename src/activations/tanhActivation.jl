@@ -19,12 +19,12 @@ export tanhActivation
 """
 function tanhActivation(Y::Array{T},doDerivative::Bool=false) where {T}
 
-A = tanh.(Y)
-
-if doDerivative
-     dA = 1-A.^2
-else
-    dA = zeros(T,0)
-end
-return A,dA
+    A = tanh.(Y)
+    dA = similar(Y)
+    if doDerivative
+         dA .= 1-A.^2
+    else
+        fill!(dA, zero(T))
+    end
+    return A, dA
 end
