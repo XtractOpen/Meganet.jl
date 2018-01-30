@@ -1,7 +1,7 @@
 using MAT, Meganet
 
 n = 64;
-Y_train,C_train,Y_test,C_test = getCIFAR10(n,string(pwd(),"//..//data//CIFAR10//"));
+Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/");
 
 # using PyPlot
 # y = Y_train[:,50]; y = y - minimum(y); y = y./maximum(y);
