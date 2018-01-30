@@ -28,18 +28,18 @@ function scaleChannels(Y,s,b)
     return Y
 end
 
-function apply(this::AffineScalingLayer{T},theta::Array{T},Y::Array{T},doDerivative=false) where {T <: Number}
+function apply(this::AffineScalingLayer{T},theta::Array{T},Yin::Array{T},doDerivative=false) where {T <: Number}
 
-    Y   = reshape(Y,this.nData[1], this.nData[2],:)
-    dA  = []
+    Y   = reshape(Yin,this.nData[1], this.nData[2],:)
+    dA  = (T)[]
     nex = size(Y,3)
 
     s2,b2 = splitWeights(this,theta);
 
-    Y = scaleChannels(Y,s2,b2);
+    Yscaled = scaleChannels(Y,s2,b2);
 
-    Y = reshape(Y,:,nex)
-    Ydata = Y
+    Yout = reshape(Yscaled,:,nex)
+    Ydata = Yout
     return Ydata, Y, dA
 end
 

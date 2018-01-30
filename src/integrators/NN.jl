@@ -63,9 +63,9 @@ end
 
 # --------- forward problem ----------
 function apply(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T <: Number}
-
-    Y  = copy(Y0)
-    nex = div(length(Y),nFeatIn(this))
+    print(typeof(Y0))
+    Y::Array{T,2}  = copy(Y0)
+    nex = div(length(Y),nFeatIn(this))::Int
     nt = length(this.layers)
 
     tmp = Array{Any}(nt+1,2)
@@ -73,11 +73,11 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where
         tmp[1,1] = Y0
     end
 
-    Ydata = zeros(T,0,nex)
+    Ydata::Array{T,2} = zeros(T,0,nex)
     cnt = 0
     for i=1:nt
-        ni = nTheta(this.layers[i])
-        Yd,Y,tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
+        ni = nTheta(this.layers[i])::Int
+        Yd::Array{T,2},Y,tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
         if this.outTimes[i]==1
             Ydata = [Ydata; this.Q*Yd]
         end
