@@ -1,6 +1,6 @@
 using MAT, Meganet
 
-n = 64;
+n = 256;
 Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/");
 
 # using PyPlot
@@ -16,13 +16,11 @@ nc   = [16;32;64;64]
 nt   = 2*[1;1;1]
 h    = [1.;1.;1.]
 
-
 TYPE = Float32;
 
-
-# getConvKernel = (nImg,sK) -> getConvGEMMKernel(TYPE,nImg,sK);
+getConvKernel = (nImg,sK) -> getConvGEMMKernel(TYPE,nImg,sK);
 # getConvKernel = (nImg,sK) -> getConvFFTKernel(TYPE,nImg,sK);
-getConvKernel = (nImg,sK) -> getSparseConvKernel2D(TYPE,nImg,sK);
+#getConvKernel = (nImg,sK) -> getSparseConvKernel2D(TYPE,nImg,sK);
 
 # opening layer
 K1 = getConvKernel(nImg,[3,3,cin,nc[1]]);
@@ -35,15 +33,15 @@ for k=1:length(nt)
     K2 = getConvKernel(nImg,[3,3,nc[k],nc[k]])
     nL = getBatchNormLayer(TYPE,[prod(nImg);nc[k]],isTrainable=true)
     L2 = getDoubleSymLayer(TYPE,K2,nL)
-    RN  = getResNN(TYPE,L2,nt[k],h[k])	
-	
+    RN  = getResNN(TYPE,L2,nt[k],h[k])
+
     if k<length(nt)
         RN.outTimes *=0
     end
     blocks = [blocks;RN]
     # change channels
     Kc = getConvKernel(nImg,[1,1,nc[k],nc[k+1]]);
-	
+
     nL = getBatchNormLayer(TYPE,[prod(nImg);nc[k+1]],isTrainable=true)
     blocks = [blocks; getSingleLayer(TYPE,Kc,nL)]
 
@@ -82,6 +80,7 @@ W = max.(W,-.2);
 W = convert(Array{TYPE},W);
 
 solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
+@time solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 
 # Profile.clear()
 # Profile.clear_malloc_data()

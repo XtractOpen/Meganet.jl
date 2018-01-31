@@ -7,6 +7,7 @@ function testAbstractMeganetElement(L::AbstractMeganetElement{T};out::Bool=false
 
     @testset "features immutable" begin
         theta = initTheta(L)
+        theta .+= .1 # To test if Y changes for affineScalingLayer
         Y     = randn(T,nFeatIn(L),nex)
         Yo    = copy(Y)
         Zd,Z,tmp  = apply(L,theta,Y,true)

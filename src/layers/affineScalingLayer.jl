@@ -21,24 +21,23 @@ function splitWeights(this::AffineScalingLayer{T},theta_in::Array{T}) where {T <
     return s2, b2
 end
 
-function scaleChannels(Y,s,b)
+function scaleChannels!(Y::Array{T},s::Array{T},b::Array{T}) where {T <: Number}
     for i=1:length(s)
-        Y[:,i,:] = s[i]*Y[:,i,:] + b[i]
+        Y[:,i,:] .= Y[:,i,:].*s[i] .+ b[i] 
     end
-    return Y
 end
 
-function apply(this::AffineScalingLayer{T},theta::Array{T},Yin::Array{T},doDerivative=false) where {T <: Number}
+function apply(this::AffineScalingLayer{T},theta::Array{T},Y::Array{T},doDerivative=false) where {T <: Number}
 
-    Y   = reshape(Yin,this.nData[1], this.nData[2],:)
+    Y   = reshape(copy(Y),this.nData[1], this.nData[2],:)
     dA  = (T)[]
     nex = size(Y,3)
 
     s2,b2 = splitWeights(this,theta);
 
-    Yscaled = scaleChannels(Y,s2,b2);
+    scaleChannels!(Y,s2,b2);
 
-    Yout = reshape(Yscaled,:,nex)
+    Yout = reshape(Y,:,nex)
     Ydata = Yout
     return Ydata, Yout, dA
 end
@@ -65,14 +64,14 @@ function initTheta(this::AffineScalingLayer{T}) where {T <: Number}
 end
 
 function Jthetamv(this::AffineScalingLayer{T},dtheta::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
-
     Y   = reshape(copy(Y),this.nData[1], this.nData[2],:)
     nex = size(Y,3)
 
     ds2,db2 = splitWeights(this,dtheta)
-    dY      = scaleChannels(Y,ds2,db2)
 
-    dY = reshape(dY,:,nex)
+    scaleChannels!(Y,ds2,db2)
+
+    dY = reshape(Y,:,nex)
     dYdata = dY
     return dYdata, dY
 end
@@ -88,12 +87,11 @@ function JthetaTmv(this::AffineScalingLayer{T},Z::Array{T},dummy::Array{T},theta
 end
 
 function JYmv(this::AffineScalingLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
-
     dY   = reshape(copy(dY),this.nData[1], this.nData[2],:);
     nex = size(dY,3)
 
     s2,b2 = splitWeights(this,theta);
-    dY    = scaleChannels(dY,s2,b2*0)
+    scaleChannels!(dY,s2,b2*0)
 
     dY     = reshape(dY,:,nex)
     dYdata = dY
@@ -101,11 +99,10 @@ function JYmv(this::AffineScalingLayer{T},dY::Array{T},theta::Array{T},Y::Array{
 end
 
 function JYTmv(this::AffineScalingLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
-
     Z   = reshape(copy(Z),this.nData[1], this.nData[2],:)
     nex = size(Z,3)
 
     s2,b2 = splitWeights(this,theta)
-    Z     = scaleChannels(Z,s2,b2*0)
+    scaleChannels!(Z,s2,b2*0)
     return reshape(Z,:,nex)
 end
