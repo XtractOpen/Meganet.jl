@@ -1,10 +1,10 @@
 export Connector,getConnector
 
 mutable struct Connector{T} <: AbstractMeganetElement{T}
-    K
-    b
-    outTimes
-    Q
+    K::Array{T,2}
+    b::T
+    outTimes::Bool
+    Q # ???
 end
 
 nTheta(this::Connector) = 0
@@ -13,7 +13,7 @@ nFeatOut(this::Connector) = size(this.K,1)
 nDataOut(this::Connector) = ((this.Q==I) ? nFeatOut(this) : size(this.Q,1))
 initTheta(this::Connector{T}) where {T <: Number} = zeros(T,0)
 
-function getConnector(TYPE::Type, K; b = zero(TYPE),outTimes=0,Q=I)
+function getConnector(TYPE::Type, K; b = zero(TYPE),outTimes=false,Q=I)
 	return Connector{TYPE}(K,b,outTimes,Q);
 end
 
@@ -22,10 +22,9 @@ function apply(this::Connector{T},theta::Array{T},Y0::Array{T},doDerivative=true
     nex = div(length(Y0),nFeatIn(this))
     Y0  = reshape(Y0,:,nex)
     Y = this.K*Y0 .+ this.b
-    if this.outTimes==1
+    Ydata::Array{T,2} = Array{T, 2}(0, 0) # Temporary fix until we know what type Q is
+    if this.outTimes==true
         Ydata = this.Q*Y
-    else
-        Ydata = Array{T, 2}(0, 0)
     end
     tmp = Y0;
     return Ydata, Y, tmp
@@ -36,7 +35,7 @@ function Jmv(this::Connector{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y:
     nex = div(length(dY),nFeatIn(this))
     dY  = reshape(dY,:,nex)
     dY = this.K*dY
-    if this.outTimes==1
+    if this.outTimes==true
         dYdata = this.Q*dY
     else
         dYdata = []
