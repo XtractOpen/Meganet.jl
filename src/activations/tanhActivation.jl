@@ -17,7 +17,7 @@ export tanhActivation
   A  - activation
   dA - derivatives
 """
-function tanhActivation(Y::Array{T},doDerivative::Bool=false) where {T}
+function tanhActivation(Y::Array{T,2},doDerivative::Bool=false) where {T <: Number}
 
     A = tanh.(Y)
     dA = similar(Y)

@@ -17,7 +17,7 @@ h    = [1.;1.;1.]
 
 TYPE = Float32;
 
-getConvKernel = (nImg,sK) -> getSparseConvKernel2D(TYPE,nImg,sK);
+getConvKernel = (nImg,sK) -> getConvGEMMKernel(TYPE,nImg,sK);
 
 # opening layer
 K1 = getConvKernel(nImg,[3,3,cin,nc[1]]);
@@ -80,3 +80,7 @@ Profile.clear()
 Profile.init(100000000, 0.001)
 @profile solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 ProfileView.view()
+
+if true
+    Juno.profiler()
+end

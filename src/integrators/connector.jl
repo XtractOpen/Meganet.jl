@@ -25,7 +25,7 @@ function apply(this::Connector{T},theta::Array{T},Y0::Array{T},doDerivative=true
     if this.outTimes==1
         Ydata = this.Q*Y
     else
-        Ydata = []
+        Ydata = Array{T, 2}(0, 0)
     end
     tmp = Y0;
     return Ydata, Y, tmp

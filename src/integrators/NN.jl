@@ -6,7 +6,7 @@ NN Neural Network block
  Y_k+1 = layer{k}(theta{k},Y_k)
 """
 mutable struct NN{T} <: AbstractMeganetElement{T}
-    layers  # layers of Neural Network, cell array
+    layers  ::Array{AbstractMeganetElement{T}, 1} # layers of Neural Network, cell array
     outTimes
     Q
 end
@@ -62,10 +62,9 @@ end
 
 
 # --------- forward problem ----------
-function apply(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T <: Number}
-
-    Y  = copy(Y0)
-    nex = div(length(Y),nFeatIn(this))
+function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},doDerivative=true) where {T<:Number}
+    Y::Array{T,2}  = copy(Y0)
+    nex = div(length(Y),nFeatIn(this))::Int
     nt = length(this.layers)
 
     tmp = Array{Any}(nt+1,2)
@@ -73,11 +72,12 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where
         tmp[1,1] = Y0
     end
 
-    Ydata = zeros(T,0,nex)
+    Ydata::Array{T,2} = zeros(T,0,nex)
     cnt = 0
     for i=1:nt
-        ni = nTheta(this.layers[i])
-        Yd,Y,tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
+        ni = nTheta(this.layers[i])::Int
+
+        Yd::Array{T,2}, Y, tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
         if this.outTimes[i]==1
             Ydata = [Ydata; this.Q*Yd]
         end
@@ -86,6 +86,7 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where
         end
         cnt = cnt + ni
     end
+
     return Ydata,Y,tmp
 end
 

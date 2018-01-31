@@ -14,8 +14,8 @@ function getAffineScalingLayer(TYPE::Type, nData)
     return AffineScalingLayer{TYPE}(nData)
 end
 
-function splitWeights(this::AffineScalingLayer{T},theta::Array{T}) where {T <: Number}
-    theta = reshape(theta,:,2)
+function splitWeights(this::AffineScalingLayer{T},theta_in::Array{T}) where {T <: Number}
+    theta = reshape(theta_in,:,2)
     s2    = theta[:,1]
     b2    = theta[:,2]
     return s2, b2
@@ -28,19 +28,19 @@ function scaleChannels(Y,s,b)
     return Y
 end
 
-function apply(this::AffineScalingLayer{T},theta::Array{T},Y::Array{T},doDerivative=false) where {T <: Number}
+function apply(this::AffineScalingLayer{T},theta::Array{T},Yin::Array{T},doDerivative=false) where {T <: Number}
 
-    Y   = reshape(Y,this.nData[1], this.nData[2],:)
-    dA  = []
+    Y   = reshape(Yin,this.nData[1], this.nData[2],:)
+    dA  = (T)[]
     nex = size(Y,3)
 
     s2,b2 = splitWeights(this,theta);
 
-    Y = scaleChannels(Y,s2,b2);
+    Yscaled = scaleChannels(Y,s2,b2);
 
-    Y = reshape(Y,:,nex)
-    Ydata = Y
-    return Ydata, Y, dA
+    Yout = reshape(Yscaled,:,nex)
+    Ydata = Yout
+    return Ydata, Yout, dA
 end
 
 function nTheta(this::AffineScalingLayer)
