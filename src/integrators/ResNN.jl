@@ -53,6 +53,12 @@ function  apply(this::ResNN{T},theta::Array{T},Y0::Array{T},doDerivative=true) w
     nex = div(length(Y0),nFeatIn(this))
     Y   = reshape(Y0,:,nex)
     tmp = Array{Any}(this.nt+1,2)
+    # make sure its empty
+    for i=1:this.nt+1
+        for j=1:2
+            tmp[i,j] = [];
+        end
+    end
     if doDerivative
         tmp[1,1] = Y0
     end
@@ -61,7 +67,7 @@ function  apply(this::ResNN{T},theta::Array{T},Y0::Array{T},doDerivative=true) w
 
     Ydata = zeros(T,0,nex)
     for i=1:this.nt
-        Z,dummy,tmp[i,2] = apply(this.layer,theta[:,i],Y,doDerivative)
+        Z,dummy,tmp[i,2] = apply(this.layer,theta[:,i],Y,doDerivative,tmp[i,2])
         Y +=  this.h * Z
         if doDerivative
             tmp[i+1,1] = Y
