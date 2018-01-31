@@ -19,7 +19,7 @@ function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T},
                            activation=tanhActivation) where {T <: Number}
     BinT = convert.(T, Bin)
     BoutT = convert.(T, Bout)
-    return DoubleSymLayer(activation,K,nLayer,Bin,Bout);
+    return DoubleSymLayer(activation,K,nLayer,BinT,BoutT);
 
 end
 
