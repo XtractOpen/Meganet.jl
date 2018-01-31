@@ -193,7 +193,7 @@ function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
     Yt        = reshape(tmp[2]::Array{T,2},:,nex)
     Y         = reshape(Yin,:,nex)
     th1, th2, th3, th4  = splitWeights(this,theta)
-    Kop       = getOp(this.K,th1)::SparseMatrixCSC{T, Int64}
+    Kop       = getOp(this.K,th1)
     A,dA    = this.activation(Yt,true)
 
     dth3      = vec(sum(this.Bout'*Z,2))
