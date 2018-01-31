@@ -28,8 +28,10 @@ function splitWeights(this::singleLayer{T},theta::Array{T}) where {T <: Number}
     return th1, th2, th3, th4
 end
 
-function apply(this::singleLayer{T},theta::Array{T},Y::Array{T},doDerivative=false) where {T <: Number}
-    tmp = Array{Any}(2)
+function apply(this::singleLayer{T},theta::Array{T},Y::Array{T},doDerivative=false,tmp=[]) where {T <: Number}
+    if isempty(tmp)
+        tmp = Array{Any}(2)
+    end
     nex = div(length(Y),nFeatIn(this))
     Y   = reshape(Y,:,nex)
     th1,th2,th3,th4 = splitWeights(this,theta)

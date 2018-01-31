@@ -37,10 +37,12 @@ function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T<:Number}
     return th1, th2, th3, th4
 end
 
-function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=true) where {T<:Number}
+function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=true,tmp =[]) where {T<:Number}
 
     #QZ = []
-    tmp = Array{Any}(2)
+    if isempty(tmp) 
+        tmp = Array{Any}(2)
+    end
     nex = div(length(Yin),nFeatIn(this))::Int
     Y   = reshape(Yin,:,nex)
 
