@@ -194,19 +194,17 @@ function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
     Y         = reshape(Yin,:,nex)
     th1, th2, th3, th4  = splitWeights(this,theta)
     Kop       = getOp(this.K,th1)
-    A,dA    = this.activation(Yt,true)
+    A::Array{T,2}, dA::Array{T,2}    = this.activation(Yt,true)
 
     dth3      = vec(sum(this.Bout'*Z,2))
-    dAZ       = dA.*(Kop*Z)
-    dth2      = vec(sum(this.Bin'*dAZ,2))
-    dth4,dAZ  = JTmv(this.nLayer,dAZ,zeros(T,0),th4,Kop*Y,tmp[1])
-
-    dth1      = JthetaTmv(this.K,dAZ,zeros(T,0),Y)
-
+    dAZ1::Array{T,2}       = dA.*(Kop*Z)
+    dth2      = vec(sum(this.Bin'*dAZ1,2))
+    dth4, dAZ2::Vector{T}  = JTmv(this.nLayer,dAZ1,zeros(T,0),th4,Kop*Y,tmp[1])
+    dth1      = JthetaTmv(this.K,dAZ2,zeros(T,0),Y)
     dth1      = dth1 + JthetaTmv(this.K,A,(T)[],Z)
     dtheta    = [-vec(dth1); -vec(dth2); vec(dth3);-vec(dth4)]
 
-    dAZ_out = reshape(dAZ,:,nex)
-    dY  = -(Kop'*dAZ_out)
+    dAZ_out = reshape(dAZ2,:,nex)
+    dY::Array{T, 2}  = -(Kop'*dAZ_out)
     return dtheta,dY
 end
