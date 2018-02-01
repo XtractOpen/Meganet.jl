@@ -4,11 +4,13 @@
 from utils_input import *
 from Resnet import ResnetModel
 
+DATA_DIR = "path/to/where/you/want/your/data/stored"
+
 if __name__ == '__main__':
     # Load Data
     ntrain = 512
     nval = 103
-    train_data, valid_data = load_cifar10("../", ntrain, nval) # Note this does not evenly distribute classes
+    train_data, valid_data = load_cifar10(DATA_DIR, ntrain, nval) # Note this does not evenly distribute classes
 
     # Set config 
     modelConfig = {
