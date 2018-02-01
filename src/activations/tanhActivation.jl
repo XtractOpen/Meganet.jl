@@ -18,7 +18,6 @@ export tanhActivation
   dA - derivatives
 """
 function tanhActivation(Y::Array{T,2},doDerivative::Bool=false) where {T <: Number}
-
 A = tanh.(Y)
 if doDerivative
      dA = 1-A.^2
