@@ -22,7 +22,7 @@ function tanhActivation(Y::Array{T,2},doDerivative::Bool=false) where {T <: Numb
     A = tanh.(Y)
     dA = similar(Y)
     if doDerivative
-         dA .= 1-A.^2
+         dA .= one(T) .- A.^2
     else
         fill!(dA, zero(T))
     end
