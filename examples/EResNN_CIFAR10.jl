@@ -85,8 +85,8 @@ solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 # Profile.clear()
 # Profile.clear_malloc_data()
 # Profile.init(n = 10^7, delay = 0.01)
-# @profile solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y,C,Y,C)
+# @profile solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 
 # open("/tmp/EREsNN_CIFAR10.txt", "w") do s
-    # Profile.print(IOContext(s, :displaysize => (24, 500)))
+#     Profile.print(IOContext(s, :displaysize => (24, 500)))
 # end
