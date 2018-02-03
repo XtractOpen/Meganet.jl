@@ -1,10 +1,10 @@
-using MAT, Meganet, BenchmarkTools, Compat, JLD#, ProfileView
+using MAT, Meganet, BenchmarkTools, Compat, JLD, ProfileView
 
 # Macro Benchmark on CIFAR10
 n = 32
 miniBatchSize = 32
 
-path2data = "/home/klensink/.juliapro/JuliaPro-0.6.2.1/JuliaPro/pkgs-0.6.2.1/v0.6/Meganet/data/CIFAR10/"
+path2data = Pkg.dir("Meganet")*"/data/CIFAR10/"
 history = Pkg.dir("Meganet")*"/benchmarks/CIFAR10/cifar10_512_64.jld"
 
 Y_train,C_train,Y_test,C_test = getCIFAR10(n, path2data)
@@ -79,7 +79,7 @@ solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 Profile.clear()
 Profile.init(100000000, 0.001)
 @profile solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
-#ProfileView.view()
+ProfileView.view()
 
 if true
     Juno.profiler()
