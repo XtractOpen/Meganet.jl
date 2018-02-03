@@ -1,6 +1,6 @@
 using MAT, Meganet, Juno
 
-n = 32;
+n = 256;
 Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/");
 
 # using PyPlot
@@ -9,7 +9,7 @@ Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/"
 # y[:,:,1] = y[:,:,1]';y[:,:,2] = y[:,:,2]';y[:,:,3] = y[:,:,3]';
 # figure(); imshow(y)
 
-miniBatchSize = 32;
+miniBatchSize = 64;
 nImg = [32; 32]
 cin  = 3
 nc   = [16;32;64;64]
