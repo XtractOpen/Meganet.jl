@@ -5,3 +5,5 @@
 *.jl.mem
 data/
 *.jld
+*.pyc
+.vscode/
