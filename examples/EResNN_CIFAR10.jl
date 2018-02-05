@@ -1,4 +1,4 @@
-using MAT, Meganet, Juno
+using MAT, Megane
 
 n = 256;
 Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/");
