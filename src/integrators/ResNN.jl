@@ -1,5 +1,4 @@
 export ResNN,getResNN
-import Juno
 
 """
 Residual Neural Network block
