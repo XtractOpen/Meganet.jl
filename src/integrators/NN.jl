@@ -36,9 +36,9 @@ end
 
 # ---------- counting thetas, input and output features -----
 function nTheta(this::NN)
-    n = 0;
+    n::Int = 0;
     for k=1:length(this.layers)
-        n = n + nTheta(this.layers[k]);
+        n += nTheta(this.layers[k]);
     end
     return n
 end
