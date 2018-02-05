@@ -24,7 +24,7 @@ for TYPE=[Float64,Float32]
     nex    = 4
     K      = getSparseConvKernel2D(TYPE,nImg,[3,3,1,nc])
     Bin    = randn(TYPE, nFeatOut(K),4)
-    nLayer = getBatchNormLayer(TYPE,[prod(nImg),nc],isTrainable=true).layers[2]
+    nLayer = getBatchNormLayer(TYPE,[prod(nImg),nc],isTrainable=true) #Do we need this to be .layers[2]?
     L      = getSingleLayer(TYPE,K,nLayer,Bin=Bin)
     @testset "singleLayer (conv/Batch/not trainable) $TYPE" begin
      testAbstractMeganetElement(L,nex=nex)
