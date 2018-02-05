@@ -16,16 +16,23 @@ end
 Appends `hist` in the JLD file `history` with the latest trial and metadata contained
 in a `Benchmark` instance.
 """
-function updatehistory!(history::String, trial::BenchmarkTools.Trial; pkg::Module = Meganet)
+function updatehistory!(history::String, trial::BenchmarkTools.Trial, funcName::String; pkg::Module = Meganet)
 
     cd(Pkg.dir("$pkg"))
     if isfile(history)
         println("Appending trial history: "*history)
-        hist = JLD.load(history, "hist")
-        push!(hist, Meganet.Benchmark(trial))
+
+        hist = JLD.load(history)
+        if haskey(hist, funcName)
+            histFunc = hist[funcName]
+        else
+            histFunc = Vector{Meganet.Benchmark}()
+        end
+
+        push!(histFunc, Meganet.Benchmark(trial))
 
         JLD.jldopen(history, "w") do file
-            write(file, "hist", hist)
+            write(file, funcName, histFunc)
         end
     else
         println("Creating trial history: "*history)
@@ -33,7 +40,7 @@ function updatehistory!(history::String, trial::BenchmarkTools.Trial; pkg::Modul
         push!(hist, Meganet.Benchmark(trial))
 
         JLD.jldopen(history, "w") do file
-            write(file, "hist", hist)
+            write(file, funcName, hist)
         end
     end
 end
