@@ -1,7 +1,7 @@
 using MAT, Meganet, BenchmarkTools, Compat, JLD, ProfileView
 
 # Macro Benchmark on CIFAR10
-n = 32
+n = 64
 miniBatchSize = 32
 
 path2data = Pkg.dir("Meganet")*"/data/CIFAR10/"
@@ -80,7 +80,3 @@ Profile.clear()
 Profile.init(100000000, 0.001)
 @profile solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 ProfileView.view()
-
-if true
-    Juno.profiler()
-end
