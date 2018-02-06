@@ -166,7 +166,9 @@ function JTmv(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Arra
             W +=  this.Q'* Wdata[:,cnt,:]
             cnt = cnt-1
         end
+
         dmbi,dW = JTmv(this.layer,W,zeros(T,0),theta[:,i],tmp[i,1],tmp[i,2])
+
         dtheta[:,i]  = this.h*dmbi
         W += this.h*dW
     end
