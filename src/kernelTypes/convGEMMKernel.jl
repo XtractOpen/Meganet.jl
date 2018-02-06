@@ -1,4 +1,5 @@
 export convGEMMKernel,Amv,ATmv,transposeTest,getConvGEMMKernel
+import Juno
 
 mutable struct convGEMMKernel{T} <: AbstractConvKernel{T}
     nImg :: Array{Int,1}
