@@ -1,4 +1,4 @@
-using Meganet, JLD, BenchmarkTools, Juno
+using Meganet, JLD, BenchmarkTools
 
 history = Pkg.dir("Meganet")*"//benchmarks//micro//bm_multConv2Dblock.jld"
 file = Pkg.dir("Meganet")*"/benchmarks/micro/vars_multConv2Dblock.jld"
