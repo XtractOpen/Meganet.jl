@@ -5,10 +5,10 @@ NN Neural Network block
 
  Y_k+1 = layer{k}(theta{k},Y_k)
 """
-mutable struct NN{T} <: AbstractMeganetElement{T}
-    layers  ::Array{AbstractMeganetElement{T}, 1} # layers of Neural Network, cell array
-    outTimes
-    Q
+mutable struct NN{T, TQ <: Union{Array{T,2},UniformScaling{Int}}} <: AbstractMeganetElement{T}
+    layers   ::Array{AbstractMeganetElement{T}, 1} # layers of Neural Network, cell array
+    outTimes ::Array{Int,1}
+    Q        :: TQ
 end
 
 function getNN(layers::Array{AbstractMeganetElement{T}},outTimes=eye(Int,length(layers))[:,end],Q=I) where {T <: Number}
@@ -21,7 +21,7 @@ function getNN(layers::Array{AbstractMeganetElement{T}},outTimes=eye(Int,length(
         end
         nout = nFeatOut(layers[k])
     end
-	return NN{T}(layers,outTimes,Q);
+	return NN(layers,outTimes,Q);
 end
 
 
@@ -43,7 +43,7 @@ function nTheta(this::NN)
     return n
 end
 nFeatIn(this::NN)   = nFeatIn(this.layers[1])
-nFeatOut(this::NN) = nFeatOut(this.layers[end])
+nFeatOut(this::NN)::Int = nFeatOut(this.layers[end])
 
 function nDataOut(this::NN)
     n=0;
@@ -159,39 +159,41 @@ end
 
 
 function JthetaTmv(this::NN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
-	return JTmv(this,Wdata,W,theta,Y,tmp)[1];
+	return JTmv(this,Wdata,W,theta,Y,tmp)[1]; # TODO: Why calculating both, Can be more efficient?
 end
 
 
 
-function JTmv(this::NN,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
-    nex = div(length(Y),nFeatIn(this))
+function JTmv(this::NN{T},Wdata::Array{T},Win::Array{T},theta::Array{T},Y::Array{T},tmp)::Tuple{Array{T,1},Array{T,1}} where {T <: Number}
+    # WOW THIS IS HACKED BIG TIME. Need to find a way to type stabalize W (not ez)
+    #TODO: Make this type stable - Some internals are not stable
+    nex = div(length(Y),nFeatIn(this)::Int)
 
     if size(Wdata,1)>0
         Wdata = reshape(Wdata,:,nex)
     end
-    if length(W)==0
-        W = zeros(T,nFeatOut(this),nex)
-    elseif length(W)>1
-        W     = reshape(W,:,nex)
-    end
 
-    dtheta = 0*theta
+    if length(Win)==0
+        W = zeros(T,nFeatOut(this),nex)
+    else
+        W = reshape(Win,:,nex)
+    end
+    dtheta = zero(T)*theta
     nt = length(this.layers)
 
     cnt = 0; cnt2 = 0
     for i=nt:-1:1
         if this.outTimes[i]==1
-            nn = nFeatOut(this.layers[i])
+            nn = nFeatOut(this.layers[i])::Int
             W += this.Q'*Wdata[end-cnt2-nn+1:end-cnt2,:]
             cnt2 = cnt2 + nn
         end
-        ni     = nTheta(this.layers[i])
+        ni     = nTheta(this.layers[i])::Int
 
         dmbi,W = JTmv(this.layers[i],W,zeros(T,0),theta[end-cnt-ni+1:end-cnt],tmp[i,1],tmp[i,2])
         dtheta[end-cnt-ni+1:end-cnt]  = dmbi
-        cnt = cnt+ni
+        cnt += ni
     end
-    return  vec(dtheta), vec(W)
 
+    return  vec(dtheta), vec(W)
 end
