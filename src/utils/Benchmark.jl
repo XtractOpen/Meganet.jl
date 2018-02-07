@@ -11,7 +11,7 @@ function Benchmark(trial::BenchmarkTools.Trial)
 end
 
 """
-    Use: updatehistory!(history::String, trial::BenchmarkTools.Trial; pkg::Module = Meganet)
+    Use: updatehistory!(history::String, trial::BenchmarkTools.Trial, funcName::String; pkg::Module = Meganet)
 
 Appends `hist` in the JLD file `history` with the latest trial and metadata contained
 in a `Benchmark` instance.
