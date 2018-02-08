@@ -119,60 +119,67 @@ for c=1:size(Z,2)
 end
 end
 
-function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, t::Array{T},shiftX,shiftT,imIdx;doDerivative = 0) where {T<:Number}
-## y = K*x
-## K - 3X3 array of Arrays
-## x - a vector of length |nImgag+2|*cin (zero padded)
-## y - a vector of length |nImgag|*cout
+function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, tin::Array{T},shiftX,shiftT,imIdx;doDerivative = 0) where {T<:Number}
+	## y = K*x
+	## K - 3X3 array of Arrays
+	## x - a vector of length |nImgag+2|*cin (zero padded)
+	## y - a vector of length |nImgag|*cout
 
-nImg1 = size(x,1);
-nImg2 = size(x,2);
-cin = size(x,3);
-cout = size(y,2);
-OneType = one(T);
+	nImg1 = size(x,1);
+	nImg2 = size(x,2);
+	cin = size(x,3);
+	cout = size(y,2);
+	OneType = one(T);
+	
+	kernelWidth = size(K,1);
+	# y = reshape(y,nImg1*nImg2,cout); # it is supposed to be of this shape...
+	k=1;
+	jt=0;it=0;jt=0;jx=0;
+	for p = 1:2:2*kernelWidth
+		for q = 1:2:2*kernelWidth
+			t = reshape(tin,nImg1,nImg2,cin);
+			lower = nImg2+shiftT[p+1]  # Move outside of the forloop for increased speed
+			upper = nImg1+shiftT[q+1]  # Move outside of the forloop for increased speed
+			for cc = 1:cin
+				jx = 1+shiftX[p];  # Moving these outside didn't seem to help
+				jt = 1+shiftT[p];
+				if jt > 1
+					@inbounds t[:,1:(jt-1),cc] = 0.0;	
+				end
+				while jt <= lower 
+					it = 1+shiftT[q];
+					ix = 1+shiftX[q];
+					if it > 1
+						for ii = 1:(it-1)
+							@inbounds t[ii,jt,cc] = zero(T)   #@inbounds t[1:(it-1),jt,cc] = 0.0 - faster unvectorized
+						end							
+					end
+					while it <= upper
+						@inbounds t[it,jt,cc] = x[ix,jx,cc,imIdx];
+						it+=1;ix+=1;
+					end
+					if it <= nImg1
+						for ii = it:nImg1
+							@inbounds t[ii,jt,cc] = zero(T)	#@inbounds t[it:nImg1,jt,cc] = 0.0 - faster unvectorized
+						end
+					end
+					jt+=1;jx+=1;
 
-kernelWidth = size(K,1);
-# y = reshape(y,nImg1*nImg2,cout); # it is supposed to be of this shape...
-k=1;
-jt=0;it=0;jt=0;jx=0;
-for p = 1:2:2*kernelWidth
-	for q = 1:2:2*kernelWidth
-		t = reshape(t,nImg1,nImg2,cin);
-		for cc = 1:cin
-			jx = 1+shiftX[p];
-			jt = 1+shiftT[p];
-			if jt > 1
-				@inbounds t[:,1:(jt-1),cc] = 0.0;
-			end
-			while jt <= nImg2+shiftT[p+1]
-				it = 1+shiftT[q];
-				ix = 1+shiftX[q];
-				if it > 1
-					@inbounds t[1:(it-1),jt,cc] = 0.0;
 				end
-				while it <= nImg1+shiftT[q+1]
-					@inbounds t[it,jt,cc] = x[ix,jx,cc,imIdx];
-					it+=1;ix+=1;
+				if jt <= nImg2
+					@inbounds t[:,jt:nImg2,cc] = 0.0;				
 				end
-				if it <= nImg1
-					@inbounds t[it:nImg1,jt,cc] = 0.0;
-				end
-				jt+=1;jx+=1;
 			end
-			if jt <= nImg2
-				@inbounds t[:,jt:nImg2,cc] = 0.0;
+			tin = reshape(t,nImg1*nImg2,cin);
+			if doDerivative == 0
+				BLAS.gemm!('N','T',OneType,tin,K[k],OneType,y);
+			else
+				BLAS.gemm!('T','N',OneType,tin,y,OneType,K[k]);
 			end
+			k+=1;
 		end
-		t = reshape(t,nImg1*nImg2,cin);
-		if doDerivative == 0
-			BLAS.gemm!('N','T',OneType,t,K[k],OneType,y);
-		else
-			BLAS.gemm!('T','N',OneType,t,y,OneType,K[k]);
-		end
-		k+=1;
 	end
-end
-return y;
+	return y;
 end
 
 
