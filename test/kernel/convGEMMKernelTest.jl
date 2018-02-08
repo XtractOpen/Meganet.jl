@@ -48,6 +48,8 @@ for TYPE=[Float64,Float32]
 	
 	v3 = vecdot(Z,Jthetamv(Kernel2,K,(TYPE)[],Y));
 	v4 = vecdot(K,JthetaTmv(Kernel2,Z,(TYPE)[],Y));
-    @test v1 == v2 == v3 == v4;
+    @test norm(v1-v2)/norm(v2) < 1e3*eps(TYPE) && 
+    norm(v2-v3)/norm(v3) < 1e3*eps(TYPE) && 
+    norm(v3-v4)/norm(v4) < 1e3*eps(TYPE)
     end
 end
