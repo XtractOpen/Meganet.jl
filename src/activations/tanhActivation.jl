@@ -19,6 +19,7 @@ export tanhActivation
 """
 function tanhActivation(Y::Array{T,2},doDerivative::Bool=false) where {T <: Number}
 
+
     A = tanh.(Y)
     dA = zeros(A)
     if doDerivative

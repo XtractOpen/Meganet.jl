@@ -72,7 +72,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
         Jval,pVal = getMisfit(objFun,xc,Yv,Cv,false);
 
         if this.out;
-            @printf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jc 100*(1-para[3]/para[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/para[2])
+            @printf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jc 100*(1-para[3]/para[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])
         end
 
         xOld       = copy(xc);
