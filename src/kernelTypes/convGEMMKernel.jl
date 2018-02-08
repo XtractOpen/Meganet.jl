@@ -146,7 +146,7 @@ function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, tin::A
 				if jt > 1
 					@inbounds t[:,1:(jt-1),cc] = 0.0;	
 				end
-				while jt < lower 
+				while jt <= lower 
 					it = 1+shiftT[q];
 					ix = 1+shiftX[q];
 					if it > 1
@@ -154,7 +154,7 @@ function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, tin::A
 							@inbounds t[ii,jt,cc] = zero(T)   #@inbounds t[1:(it-1),jt,cc] = 0.0 - faster unvectorized
 						end							
 					end
-					while it < upper
+					while it <= upper
 						@inbounds t[it,jt,cc] = x[ix,jx,cc,imIdx];
 						it+=1;ix+=1;
 					end
@@ -164,6 +164,7 @@ function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, tin::A
 						end
 					end
 					jt+=1;jx+=1;
+
 				end
 				if jt <= nImg2
 					@inbounds t[:,jt:nImg2,cc] = 0.0;				
