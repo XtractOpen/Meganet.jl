@@ -144,13 +144,13 @@ for p = 1:2:2*kernelWidth
 			if jt > 1
 				@inbounds t[:,1:(jt-1),cc] = 0.0;
 			end
-			while jt < nImg2+shiftT[p+1]
+			while jt <= nImg2+shiftT[p+1]
 				it = 1+shiftT[q];
 				ix = 1+shiftX[q];
 				if it > 1
 					@inbounds t[1:(it-1),jt,cc] = 0.0;
 				end
-				while it < nImg1+shiftT[q+1]
+				while it <= nImg1+shiftT[q+1]
 					@inbounds t[it,jt,cc] = x[ix,jx,cc,imIdx];
 					it+=1;ix+=1;
 				end
