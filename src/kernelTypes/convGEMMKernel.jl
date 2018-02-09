@@ -130,14 +130,13 @@ function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, tin::A
 	cin = size(x,3);
 	cout = size(y,2);
 	OneType = one(T);
-	
+	t = reshape(tin,nImg1,nImg2,cin);
 	kernelWidth = size(K,1);
 	# y = reshape(y,nImg1*nImg2,cout); # it is supposed to be of this shape...
 	k=1;
 	jt=0;it=0;jt=0;jx=0;
 	for p = 1:2:2*kernelWidth
 		for q = 1:2:2*kernelWidth
-			t = reshape(tin,nImg1,nImg2,cin);
 			lower = nImg2+shiftT[p+1]  # Move outside of the forloop for increased speed
 			upper = nImg1+shiftT[q+1]  # Move outside of the forloop for increased speed
 			for cc = 1:cin
@@ -170,11 +169,10 @@ function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, tin::A
 					@inbounds t[:,jt:nImg2,cc] = 0.0;				
 				end
 			end
-			tin = reshape(t,nImg1*nImg2,cin);
 			if doDerivative == 0
-				BLAS.gemm!('N','T',OneType,tin,K[k],OneType,y);
+				BLAS.gemm!('N','T',OneType,reshape(t,nImg1*nImg2,cin),K[k],OneType,y);
 			else
-				BLAS.gemm!('T','N',OneType,tin,y,OneType,K[k]);
+				BLAS.gemm!('T','N',OneType,reshape(t,nImg1*nImg2,cin),y,OneType,K[k]);
 			end
 			k+=1;
 		end
