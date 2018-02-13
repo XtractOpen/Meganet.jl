@@ -25,7 +25,7 @@ getConvKernel = (nImg,sK) -> getConvGEMMKernel(TYPE,nImg,sK);
 # opening layer
 K1 = getConvKernel(nImg,[3,3,cin,nc[1]]);
 
-nL = getBatchNormLayer(TYPE,[prod(nImg);nc[1]],isTrainable=true);
+nL = getBatchNormLayer(TYPE,[prod(nImg);nc[1]],isTrainable=true)
 blocks = [getSingleLayer(TYPE,K1,nL)]
 
 for k=1:length(nt)
@@ -40,7 +40,7 @@ for k=1:length(nt)
     end
     blocks = [blocks;RN]
     # change channels
-    Kc = getConvKernel(nImg,[1,1,nc[k],nc[k+1]]);
+    Kc = getConvKernel(nImg,[1,1,nc[k],nc[k+1]])
 
     nL = getBatchNormLayer(TYPE,[prod(nImg);nc[k+1]],isTrainable=true)
     blocks = [blocks; getSingleLayer(TYPE,Kc,nL)]
@@ -54,8 +54,8 @@ for k=1:length(nt)
 end
 
 # Connector block
-B      = kron(speye(TYPE,nc[end]),ones(TYPE, prod(nImg)))/prod(nImg);
-blocks = [blocks; getConnector(TYPE,B')];
+B      = kron(speye(TYPE,nc[end]),ones(TYPE, prod(nImg)))/prod(nImg)
+blocks = [blocks; getConnector(TYPE,B')]
 blocks[end].outTimes=1
 
 net = getNN(blocks)
@@ -74,10 +74,10 @@ pLoss = getSoftMaxLoss(TYPE);
 objFun = dnnObjFctn(net,pLoss,pRegTh,pRegW)
 opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=1,miniBatch=miniBatchSize,out=true)
 
-W      = 0.1*vec(randn(TYPE,10,nFeatOut(net)+1));
-W = min.(W,.2);
-W = max.(W,-.2);
-W = convert(Array{TYPE},W);
+W      = 0.1*vec(randn(TYPE,10,nFeatOut(net)+1))
+W = min.(W,.2)
+W = max.(W,-.2)
+W = convert(Array{TYPE},W)
 
 solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 @time solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
