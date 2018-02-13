@@ -15,7 +15,7 @@ function getBatchNormLayer(TYPE::Type, nData; eps = convert(TYPE,1e-3),isTrainab
     L =  normLayer{TYPE}(nData,3,eps)
     if isTrainable
         SL = AffineScalingLayer{TYPE}(nData)
-        return getNN([L;SL]);
+        return getbatchNormNN((L,SL));
     else
         return L;
     end
@@ -25,7 +25,7 @@ function getTVNormLayer(TYPE::Type,nData;eps = convert(TYPE,1e-3),isTrainable::B
     L =  normLayer{TYPE}(nData,2,eps)
     if isTrainable
         SL = AffineScalingLayer{TYPE}(nData)
-        return getNN([L;SL])
+        return getbatchNormNN((L,SL))
     else
         return L
     end

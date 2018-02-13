@@ -22,6 +22,7 @@ include("kernelTypes/convCircKernel.jl");
 
 include("layers/affineScalingLayer.jl")
 include("layers/normLayer.jl")
+include("integrators/batchNormNN.jl")
 include("layers/doubleSymLayer.jl")
 include("layers/singleLayer.jl")
 
