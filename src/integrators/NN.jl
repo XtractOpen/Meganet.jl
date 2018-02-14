@@ -64,7 +64,6 @@ end
 
 # --------- forward problem ----------
 function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},doDerivative=true) where {T<:Number}
-    # tic()
     Y::Array{T,2}  = copy(Y0)
     nex = div(length(Y),nFeatIn(this))::Int
     nt = length(this.layers)
@@ -78,7 +77,6 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},doDerivative=true) whe
     cnt = 0
     for i=1:nt
         ni = nTheta(this.layers[i])::Int
-        # @timeit to "Apply"  apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
         
         Yd::Array{T,2}, Y, tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
         if this.outTimes[i]==1
@@ -89,9 +87,7 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},doDerivative=true) whe
         end
         cnt = cnt + ni
     end
-    # println("Measuring time for all the layers in NN ",toc())
-    # println(to)
-    # error("After 1 apply call from NN")
+
     return Ydata,Y,tmp
 end
 
