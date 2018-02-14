@@ -7,6 +7,9 @@ import JLD, BenchmarkTools
 include("AbstractMeganetElement.jl")
 
 include("activations/tanhActivation.jl")
+include("activations/reluActivation.jl")
+include("activations/identityActivation.jl")
+
 
 include("integrators/NN.jl")
 include("integrators/connector.jl")
@@ -17,6 +20,7 @@ include("kernelTypes/sparseKernel.jl")
 include("kernelTypes/convFFTKernel.jl");
 include("kernelTypes/convGEMMKernel.jl");
 include("kernelTypes/convCircKernel.jl");
+# include("kernelTypes/convDiagKernel.jl");
 
 
 
