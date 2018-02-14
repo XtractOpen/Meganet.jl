@@ -4,7 +4,8 @@ using MAT, Meganet, BenchmarkTools, Compat, JLD
 n = 512
 miniBatchSize = 64
 
-path2data = "/home/klensink/Documents/cifar-10-batches-mat/"
+#path2data = "/home/klensink/Documents/cifar-10-batches-mat/"
+path2data = Pkg.dir("Meganet")*"/data/CIFAR10/"
 history = Pkg.dir("Meganet")*"/benchmarks/CIFAR10/cifar10_512_64.jld"
 
 Y_train,C_train,Y_test,C_test = getCIFAR10(n, path2data)
