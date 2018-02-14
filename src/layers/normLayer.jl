@@ -15,7 +15,7 @@ function getBatchNormLayer(TYPE::Type, nData; eps = convert(TYPE,1e-3),isTrainab
     L =  normLayer{TYPE}(nData,3,eps)
     if isTrainable
         SL = AffineScalingLayer{TYPE}(nData)
-        return getNN([L;SL]);
+        return getbatchNormNN((L,SL));
     else
         return L;
     end
@@ -25,13 +25,13 @@ function getTVNormLayer(TYPE::Type,nData;eps = convert(TYPE,1e-3),isTrainable::B
     L =  normLayer{TYPE}(nData,2,eps)
     if isTrainable
         SL = AffineScalingLayer{TYPE}(nData)
-        return getNN([L;SL])
+        return getbatchNormNN((L,SL))
     else
         return L
     end
 end
 
-function apply(this::normLayer{T},theta::Array{T},Yin::Array{T},doDerivative=true) where {T <: Number}
+function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=true) where {T <: Number}
 
     # first organize Y with channels
     nf  = this.nData[2]::Int
@@ -41,17 +41,15 @@ function apply(this::normLayer{T},theta::Array{T},Yin::Array{T},doDerivative=tru
     dA = (T)[]
 
     # subtract mean across pixels
-    Ya = mean(Y,this.doNorm)
-    Y  = Y.-Ya
-    # Y .-= Ya #TODO: This line is more efficient, but tests do not want Y to change. Why dont we want Y to change in place?
+    Yout  = Y.-mean(Y,this.doNorm)
 
     # normalize
-    S2 = mean(Y.^2,this.doNorm)
-    Y ./= sqrt.(S2+this.eps)
+    S2 = sqrt.(mean(Yout.^2,this.doNorm) + this.eps)
+    Yout ./= S2
 
-    Yout = reshape(Y,:,nex)
+    Yout2 = reshape(Yout,:,nex)
 
-    return Yout, Yout, dA
+    return Yout2, Yout2, dA
 end
 
 function nTheta(this::normLayer)
@@ -79,26 +77,27 @@ function Jthetamv(this::normLayer,dtheta::Array{T},theta::Array{T},Y::Array{T},d
     return zeros(T,size(Y)), zeros(T,size(Y))
 end
 
-function JYmv(this::normLayer,dY::Array{T},theta::Array{T},Y::Array{T},dA=nothing) where {T <: Number}
+function JYmv(this::normLayer,dYin::Array{T},theta::Array{T},Yin::Array{T},dA=nothing) where {T <: Number}
 
-    nex = div(length(dY),nFeatIn(this))
+    nex = div(length(dYin),nFeatIn(this))
     nf  = this.nData[2]
-    dY   = reshape(dY,:,nf,nex)
-    Y    = reshape(Y,:,nf,nex)
+    dY   = reshape(dYin,:,nf,nex)
+    Y    = reshape(Yin,:,nf,nex)
 
     Ya  = mean(Y,this.doNorm)
-    Y   = Y .- Ya
+    Yout = Y .- Ya
     dYa = mean(dY,this.doNorm)
-    dY  = dY .- dYa
-    S2y = mean(Y.^2,this.doNorm);
+    dYout  = dY .- dYa
+
+    S2y = mean(Yout.^2,this.doNorm);
     den = sqrt.(S2y+this.eps);
+    tmp = mean(Yout.*dYout,this.doNorm)
+    dYout ./= den
 
-    tmp = mean(Y.*dY,this.doNorm)
-    dY  = dY ./ den
+    den .^= 3
+    Yout .= Yout.*tmp ./den
 
-    Y   = Y .* tmp
-    Y  =  Y ./ den.^3
-    dZ = reshape(dY-Y,:,nex)
+    dZ = reshape(dYout-Yout,:,nex)
     return dZ,dZ
 end
 
@@ -116,27 +115,27 @@ function JthetaTmv(this::normLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T
     return zeros(T,0)
 end
 
-function JYTmv(this::normLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},dA=nothing) where {T <: Number}
+function JYTmv(this::normLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T},Yin::Array{T},dA=nothing) where {T <: Number}
 
-    nex = div(length(Y),nFeatIn(this))
+    nex = div(length(Yin),nFeatIn(this))
     nf  = this.nData[2]
 
-    Z   = reshape(Z,:,nf,nex)
-    Y    = reshape(Y,:,nf,nex)
+    Z   = reshape(Zin,:,nf,nex)
+    Y    = reshape(Yin,:,nf,nex)
 
     Ya = mean(Y,this.doNorm)
-    Y  = Y .- Ya
+    Yout  = Y .- Ya
     Za = mean(Z,this.doNorm)
-    Z  = Z .- Za
-    S2y = mean(Y.^2,this.doNorm)
+    Zout  = Z .- Za
+    S2y = mean(Yout.^2,this.doNorm)
     den = sqrt.(S2y+this.eps)
 
-    tmp = mean(Y.*Z,this.doNorm)
-    Z =  Z ./ den
-    Y  = Y .* tmp
-    Y =  Y ./ den.^3
-    dY = Z-Y
+    tmp = mean(Yout.*Zout,this.doNorm)
+    Zout ./= den
+    Yout .*= tmp
+    Yout ./= den.^3 # TODO: look into doing both this division and multiplication above at same time
+    dY = Zout-Yout
     dYa = mean(dY,this.doNorm)
-    dY = dY .- dYa
+    dY .-= dYa
     return reshape(dY,:,nex)
 end

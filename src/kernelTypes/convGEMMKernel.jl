@@ -15,11 +15,11 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T<:Numb
 	nex   = div(numel(Y),prod(nImgIn(this)))
     # compute convolution
 	Y     = reshape(Y,nImg[1],nImg[2],this.sK[3],nex);
-    AY    = zeros(T,nImg[1]*nImg[2],this.sK[4],nex);
+    AY    = Array{T, 3}(nImg[1]*nImg[2],this.sK[4],nex);
 	aux   = zeros(T,nImg[1],nImg[2],this.sK[3]);
     AYk   = zeros(T,nImg[1]*nImg[2],this.sK[4]);
 	### reshape the kernels for gemm!:
-	K = reshape(theta,tuple(sK...));
+	K = reshape(theta, sK[1], sK[2], sK[3], sK[4])
 	KK = Array{Array{T,2}}(sK[1],sK[2]);
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
@@ -34,16 +34,16 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T<:Numb
 		@inbounds AY[:,:,k] = AYk;
 		AYk[:] = zero(T)
 	end
-    AY = reshape(AY,:,nex);
-    return AY
+    AY_out = reshape(AY,:,nex);
+    return AY_out
 end
 
-function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T<:Number}
+function ATmv(this::convGEMMKernel{T},theta::Array{T},Zin::Array{T}) where {T<:Number}
 	nImg  = this.nImg;
 	sK    = this.sK;
-    nex   =  div(numel(Z),prod(nImgOut(this)));
-    K     = reshape(theta,tuple(sK...));
-	Z     = reshape(Z,nImg[1],nImg[2],sK[4],nex);
+    nex   =  div(numel(Zin),prod(nImgOut(this)));
+    K     = reshape(theta, sK[1], sK[2], sK[3], sK[4]);
+	Z     = reshape(Zin,nImg[1],nImg[2],sK[4],nex);
 	aux     = zeros(T,nImg[1],nImg[2],sK[4]);
 	ATZ   = zeros(T,nImg[1]*nImg[2],sK[3],nex);
 	ATZk  = zeros(T,nImg[1]*nImg[2],sK[3]);
@@ -64,8 +64,8 @@ function ATmv(this::convGEMMKernel{T},theta::Array{T},Z::Array{T}) where {T<:Num
 		@inbounds ATZ[:,:,k] = ATZk;
 		ATZk[:] = zero(T)
 	end
-    ATZ = reshape(ATZ,:,nex);
-    return ATZ
+    ATZ_out = reshape(ATZ,:,nex);
+    return ATZ_out
 end
 
 function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy::Array{T},Y::Array{T},temp=nothing) where {T<:Number}
@@ -74,38 +74,39 @@ function Jthetamv(this::convGEMMKernel{T},dtheta::Array{T},dummy::Array{T},Y::Ar
     return Z
 end
 
-function JthetaTmv(this::convGEMMKernel{T},Z::Array{T},dummy::Array{T},Y::Array{T}) where {T<:Number}
+function JthetaTmv(this::convGEMMKernel{T}, Zin::Array{T}, dummy::Array{T}, Yin::Array{T}) where {T<:Number}
      # derivative of Z*(A(theta)*Y) w.r.t. theta
-	sK = this.sK;
-	nImg = this.nImg;
-	nex   = div(numel(Y),prod(nImgIn(this)))
+	sK = this.sK
+	nImg = this.nImg
+	nex   = div(numel(Yin),prod(nImgIn(this)))
     # compute convolution
-	Y     = reshape(Y,nImg[1],nImg[2],this.sK[3],nex);
-	Z	  = reshape(Z,nImg[1]*nImg[2],this.sK[4],nex);
-	Zk    = zeros(T,nImg[1]*nImg[2],this.sK[4]);
-	aux     = zeros(T,nImg[1],nImg[2],this.sK[3]);
+	Y     = reshape(Yin, nImg[1], nImg[2], this.sK[3], nex)
+	Z	  = reshape(Zin, nImg[1]*nImg[2], this.sK[4], nex)
+	Zk    = zeros(T, nImg[1]*nImg[2], this.sK[4])
+	aux     = zeros(T, nImg[1], nImg[2], this.sK[3])
+
 	### reshape the kernels for gemm!:
-	dtheta = zeros(T,tuple(sK...));
-	KK = Array{Array{T,2}}(sK[1],sK[2]);
+	dtheta = zeros(T, sK[1], sK[2], sK[3], sK[4])
+	KK = Array{Array{T, 2}}(sK[1], sK[2])
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
-			@inbounds KK[k1,k2] = zeros(T,sK[3],sK[4]);
+			@inbounds KK[k1, k2] = zeros(T, sK[3], sK[4])
 		end
 	end
-	shiftX = [0;-1;0;0;1;0];
-	shiftT = [1;0;0;0;0;-1];
+	shiftX = [0;-1;0;0;1;0]
+	shiftT = [1;0;0;0;0;-1]
     for k = 1:nex
-		getColumn!(Z,Zk,k);
-		multConv2Dblock(Y,KK, Zk,aux,shiftX,shiftT,k,doDerivative = 1);
+		getColumn!(Z, Zk, k)
+		multConv2Dblock(Y, KK,  Zk, aux, shiftX, shiftT, k, doDerivative = 1)
 	end
 	### Assemble the kernels from gemm!:
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
-			@inbounds dtheta[k1,k2,:,:] = KK[k1,k2];
+			@inbounds dtheta[k1, k2, :, :] = KK[k1, k2]
 		end
 	end
-    dtheta = reshape(dtheta,tuple(this.sK...));
-    return dtheta
+    dtheta_out = reshape(dtheta, sK[1], sK[2], sK[3], sK[4])
+    return dtheta_out
 end
 
 
@@ -118,60 +119,65 @@ for c=1:size(Z,2)
 end
 end
 
-function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, t::Array{T},shiftX,shiftT,imIdx;doDerivative = 0) where {T<:Number}
-## y = K*x
-## K - 3X3 array of Arrays
-## x - a vector of length |nImgag+2|*cin (zero padded)
-## y - a vector of length |nImgag|*cout
+function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, tin::Array{T},shiftX,shiftT,imIdx;doDerivative = 0) where {T<:Number}
+	## y = K*x
+	## K - 3X3 array of Arrays
+	## x - a vector of length |nImgag+2|*cin (zero padded)
+	## y - a vector of length |nImgag|*cout
 
-nImg1 = size(x,1);
-nImg2 = size(x,2);
-cin = size(x,3);
-cout = size(y,2);
-OneType = one(T);
+	nImg1 = size(x,1);
+	nImg2 = size(x,2);
+	cin = size(x,3);
+	cout = size(y,2);
+	OneType = one(T);
+	t = reshape(tin,nImg1,nImg2,cin);
+	kernelWidth = size(K,1);
+	# y = reshape(y,nImg1*nImg2,cout); # it is supposed to be of this shape...
+	k=1;
+	jt=0;it=0;jt=0;jx=0;
+	for p = 1:2:2*kernelWidth
+		for q = 1:2:2*kernelWidth
+			lower = nImg2+shiftT[p+1]  # Move outside of the forloop for increased speed
+			upper = nImg1+shiftT[q+1]  # Move outside of the forloop for increased speed
+			for cc = 1:cin
+				jx = 1+shiftX[p];  # Moving these outside didn't seem to help
+				jt = 1+shiftT[p];
+				if jt > 1
+					@inbounds t[:,1:(jt-1),cc] = 0.0;	
+				end
+				while jt <= lower 
+					it = 1+shiftT[q];
+					ix = 1+shiftX[q];
+					if it > 1
+						for ii = 1:(it-1)
+							@inbounds t[ii,jt,cc] = zero(T)   #@inbounds t[1:(it-1),jt,cc] = 0.0 - faster unvectorized
+						end							
+					end
+					while it <= upper
+						@inbounds t[it,jt,cc] = x[ix,jx,cc,imIdx];
+						it+=1;ix+=1;
+					end
+					if it <= nImg1
+						for ii = it:nImg1
+							@inbounds t[ii,jt,cc] = zero(T)	#@inbounds t[it:nImg1,jt,cc] = 0.0 - faster unvectorized
+						end
+					end
+					jt+=1;jx+=1;
 
-kernelWidth = size(K,1);
-# y = reshape(y,nImg1*nImg2,cout); # it is supposed to be of this shape...
-k=1;
-jt=0;it=0;jt=0;jx=0;
-for p = 1:2:2*kernelWidth
-	for q = 1:2:2*kernelWidth
-		t = reshape(t,nImg1,nImg2,cin);
-		for cc = 1:cin
-			jx = 1+shiftX[p];
-			jt = 1+shiftT[p];
-			if jt > 1
-				@inbounds t[:,1:(jt-1),cc] = 0.0;
-			end
-			while jt < nImg2+shiftT[p+1]
-				it = 1+shiftT[q];
-				ix = 1+shiftX[q];
-				if it > 1
-					@inbounds t[1:(it-1),jt,cc] = 0.0;
 				end
-				while it < nImg1+shiftT[q+1]
-					@inbounds t[it,jt,cc] = x[ix,jx,cc,imIdx];
-					it+=1;ix+=1;
+				if jt <= nImg2
+					@inbounds t[:,jt:nImg2,cc] = 0.0;				
 				end
-				if it <= nImg1
-					@inbounds t[it:nImg1,jt,cc] = 0.0;
-				end
-				jt+=1;jx+=1;
 			end
-			if jt <= nImg2
-				@inbounds t[:,jt:nImg2,cc] = 0.0;
+			if doDerivative == 0
+				BLAS.gemm!('N','T',OneType,reshape(t,nImg1*nImg2,cin),K[k],OneType,y);
+			else
+				BLAS.gemm!('T','N',OneType,reshape(t,nImg1*nImg2,cin),y,OneType,K[k]);
 			end
+			k+=1;
 		end
-		t = reshape(t,nImg1*nImg2,cin);
-		if doDerivative == 0
-			BLAS.gemm!('N','T',OneType,t,K[k],OneType,y);
-		else
-			BLAS.gemm!('T','N',OneType,t,y,OneType,K[k]);
-		end
-		k+=1;
 	end
-end
-return y;
+	return y;
 end
 
 

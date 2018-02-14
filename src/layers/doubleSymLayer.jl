@@ -5,7 +5,7 @@ export DoubleSymLayer,getDoubleSymLayer
 
  Y(theta,Y0) = K(th1)'(activation( K(th1)\*Y0 + trafo.Bin\*th2))) + trafo.Bout\*th3
 """
-mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{NN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
+mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNormNN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
     activation  :: Function   # activation function
     K           :: TK   # Kernel model, e.g., convMod
     nLayer      :: TN   # normalization layer
@@ -170,43 +170,46 @@ function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Ar
     return dtheta
 end
 
-function JYTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
+function JYTmv(this::DoubleSymLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
 
     nex       = div(length(Y),nFeatIn(this))
-    Z         = reshape(Z,:,nex)
+    Z         = reshape(Zin,:,nex)
     th1,th2,th3,th4  = splitWeights(this,theta)
     Kop       = getOp(this.K,th1)
     A,dA      = this.activation(tmp[2],true)
 
     dAZ       = dA.*(Kop*Z)
     dAZ       = JYTmv(this.nLayer,dAZ,(T)[],th4,Kop*Y,tmp[1])
-    dAZ       = reshape(dAZ,:,nex)
-    dY  = -(Kop'*dAZ)
+    dAZ_out       = reshape(dAZ,:,nex)
+    dY  = -(Kop'*dAZ_out)
     return dY
 end
 
-function JTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
+function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
+                                            theta::Array{T}, Yin::Array{T}, tmp) where {T<:Number}
 
-    dY = (T)[]
-    nex       = div(length(Y),nFeatIn(this))
-    Z         = reshape(Z,:,nex)
-    Yt        = reshape(tmp[2],:,nex)
-    Y         = reshape(Y,:,nex)
-    th1, th2,th3,th4  = splitWeights(this,theta)
-    Kop       = getOp(this.K,th1)
-    A,dA    = this.activation(Yt,true)
+    nex  = div(length(Yin),nFeatIn(this))
+    Z         = reshape(Zin, :, nex)
+    Yt        = reshape(tmp[2]::Array{T,2},:,nex)
+    Y         = reshape(Yin,:,nex)
+    th1, th2, th3, th4  = splitWeights(this,theta)
+    #Kop       = getOp(this.K,th1)
+    A::Array{T,2}, dA::Array{T,2}    = this.activation(Yt,true)
 
     dth3      = vec(sum(this.Bout'*Z,2))
-    dAZ       = dA.*(Kop*Z)
-    dth2      = vec(sum(this.Bin'*dAZ,2))
-    dth4,dAZ  = JTmv(this.nLayer,dAZ,zeros(T,0),th4,Kop*Y,tmp[1])
 
-    dth1      = JthetaTmv(this.K,dAZ,zeros(T,0),Y)
+    KopZ = Amv(this.K, th1, Z)
+    dAZ1       = dA.*KopZ
 
-    dth1      = dth1 + JthetaTmv(this.K,A,(T)[],Z)
+    dth2      = vec(sum(this.Bin'*dAZ1,2))
+    KopY      = Amv(this.K, th1, Y)
+    dth4, dAZ2  = JTmv(this.nLayer,dAZ1,zeros(T,0),th4,KopY,tmp[1])
+    dth1      = JthetaTmv(this.K,dAZ2,zeros(T,0),Y)
+    dth1 += JthetaTmv(this.K,A,(T)[],Z)
     dtheta    = [-vec(dth1); -vec(dth2); vec(dth3);-vec(dth4)]
 
-    dAZ = reshape(dAZ,:,nex)
-    dY  = -(Kop'*dAZ)
-    return dtheta,dY
+    dAZ_out = reshape(dAZ2,:,nex)
+    KopTdAZ = ATmv(this.K, th1, dAZ_out)
+    dY  = -KopTdAZ
+    return dtheta, dY
 end
