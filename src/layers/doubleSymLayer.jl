@@ -37,22 +37,27 @@ function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T<:Number}
     return th1, th2, th3, th4
 end
 
-function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=true) where {T<:Number}
-
+function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},tmp,doDerivative=true) where {T<:Number}
+    if isempty(tmp)
+        tmp = Array{Any}(2)
+    end
     #QZ = []
-    tmp = Array{Any}(2)
     nex = div(length(Yin),nFeatIn(this))::Int
     Y   = reshape(Yin,:,nex)
 
     theta1,theta2,theta3,theta4 = splitWeights(this,theta)
     Kop    = getOp(this.K,theta1)
     KY     = Kop*Y
-    KY,dummy,tmp[1] = apply(this.nLayer,theta4,KY)
+
+    #TODO: check is assigned and pass in tmp[1]
+    KY,dummy,tmp[1] = apply(this.nLayer,theta4,KY,doDerivative)
     Yt     = KY
     if !isempty(theta2)
      Yt .+= this.Bin*theta2
     end
     tmp[2] = copy(Yt)
+
+    #TODO: check is assigned and pass in tmp[1] wait why do we not update tmp[2]?
     Z::Array{T,2},      = this.activation(Yt,doDerivative)
     Z      = -(Kop'*Z)
     if !isempty(theta3)

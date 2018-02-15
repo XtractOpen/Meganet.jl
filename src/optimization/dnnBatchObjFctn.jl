@@ -17,28 +17,31 @@ mutable struct dnnObjFctn
 
 splitWeights(this::dnnObjFctn,x) = (return x[1:nTheta(this.net)], x[nTheta(this.net)+1:end])
 
-function getMisfit(this::dnnObjFctn,thetaW::Vector{T},Y::Array{T},C::Array{T},doDerivative=true) where {T}
+function getMisfit(this::dnnObjFctn,thetaW::Vector{T},Y::Array{T},C::Array{T},tmp::Array{Any},doDerivative=true) where {T<:Number}
     theta,W = splitWeights(this,thetaW)
-    return getMisfit(this,theta,W,Y,C,doDerivative)
+    return getMisfit(this,theta,W,Y,C,tmp,doDerivative)
 end
 
-function getMisfit(this::dnnObjFctn,theta::Array{T},W::Array{T},Y::Array{T},C::Array{T},doDerivative=true) where {T}
+function getMisfit(this::dnnObjFctn,theta::Array{T},W::Array{T},Y::Array{T},C::Array{T},tmp::Array{Any},doDerivative=true) where {T<:Number}
 
-    YN,dummy,tmp = apply(this.net,theta,Y,doDerivative)
+    YN,dummy,tmp = apply(this.net,theta,Y,tmp,doDerivative)
 
+    # println(eltype(tmp[1,2][1][1,1]))
+    # println(size(tmp))
+    # error("check tmp out")
     Fc,hisF,dWF,d2WF,dYF,d2YF = getMisfit(this.pLoss,W,YN,C,doDerivative,doDerivative)
 
     if doDerivative
 		 dYF = JthetaTmv(this.net,dYF,zeros(T,0),theta,Y,tmp)
     end
-    return Fc,hisF,vec(dYF),vec(dWF)
+    return Fc,hisF,vec(dYF),vec(dWF),tmp
 end
 
-function evalObjFctn(this::dnnObjFctn,thetaW::Array{T},Y::Array{T},C::Array{T},doDerivative=true) where {T}
+function evalObjFctn(this::dnnObjFctn,thetaW::Array{T},Y::Array{T},C::Array{T},tmp::Array{Any},doDerivative=true) where {T<:Number}
     theta,W = splitWeights(this,thetaW)
 
     # compute misfit
-    Fc,hisF,dFth,dFW = getMisfit(this,theta,W,Y,C,doDerivative)
+    Fc,hisF,dFth,dFW,tmp = getMisfit(this,theta,W,Y,C,tmp,doDerivative)
 
     # regularizer for weights
     Rth,dRth, = regularizer(this.pRegTheta,theta)
@@ -49,5 +52,5 @@ function evalObjFctn(this::dnnObjFctn,thetaW::Array{T},Y::Array{T},C::Array{T},d
     Jc = Fc + Rth + RW
     dJ = [dFth+dRth; dFW+dRW]
 
-    return convert(T,Jc),hisF,convert(Array{T},dJ)
+    return convert(T,Jc),hisF,convert(Array{T},dJ),tmp
 end

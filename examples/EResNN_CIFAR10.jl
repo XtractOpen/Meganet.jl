@@ -58,7 +58,7 @@ B      = kron(speye(TYPE,nc[end]),ones(TYPE, prod(nImg)))/prod(nImg)
 blocks = [blocks; getConnector(TYPE,B')]
 blocks[end].outTimes=1
 
-net = getNN(blocks)
+net = getNN(blocks) 
 theta = initTheta(net);
 
 display(net)
@@ -80,7 +80,7 @@ W = max.(W,-.2)
 W = convert(Array{TYPE},W)
 
 solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
-@time solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
+@time solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test);
 
 # Profile.clear()
 # Profile.clear_malloc_data()

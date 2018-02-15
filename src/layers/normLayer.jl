@@ -38,7 +38,7 @@ function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=t
     nex = div(length(Yin),nFeatIn(this))::Int
     Y = reshape(Yin,:,nf,nex)
 
-    dA = (T)[]
+    dA = Array{T,2}(0,0)
 
     # subtract mean across pixels
     Yout  = Y.-mean(Y,this.doNorm)

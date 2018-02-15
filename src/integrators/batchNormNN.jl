@@ -58,6 +58,7 @@ function apply(this::batchNormNN{T},theta::Array{T},Y0::Array{T,2},doDerivative=
     nex = div(length(Y),nFeatIn(this))::Int
     nt = length(this.layers)
 
+    # tmp = Array{Array{T,2},2}(nt+1,2)
     tmp = Array{Any}(nt+1,2)
     if doDerivative
         tmp[1,1] = Y0
@@ -77,6 +78,9 @@ function apply(this::batchNormNN{T},theta::Array{T},Y0::Array{T,2},doDerivative=
         end
         cnt = cnt + ni
     end
+
+    #To Keep typing consistent
+    # tmp[3,2] = Array{T,2}(0,0)
 
     return Ydata,Y,tmp
 end

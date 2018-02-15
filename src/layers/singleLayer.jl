@@ -27,16 +27,29 @@ function splitWeights(this::singleLayer{T},theta::Array{T}) where {T <: Number}
     return th1, th2, th3, th4
 end
 
-function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},doDerivative=false) where {T <: Number}
-    tmp = Array{Any}(2)
+function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},tmp,doDerivative=false) where {T <: Number}
+
+    if isempty(tmp)
+        tmp = Array{Any}(2)
+    end
     nex = div(length(Yin),nFeatIn(this))
     Y   = reshape(Yin,:,nex)
     th1,th2,th3,th4 = splitWeights(this,theta)
 
     Yout::Array{T,2}     =  getOp(this.K,th1)*Y 
     Yout .+= this.Bin * th2
+    # if !isassigned(tmp,1)
+    #     tmp[1] = Array{Any}(0) #TODO get batchNormNN to return a 1D arg maybe? Just think about it
+    # end
     Yout,dummy,tmp[1] = apply(this.nLayer,th4,Yout,doDerivative)
+
+    # if !isassigned(tmp,2)
+    #     tmp[2] = Array{Any}(0) #TODO We know this one is an array of T
+    # end
     Yout,tmp[2]  = this.activation(Yout,doDerivative)
+    # println(typeof(tmp[2]))
+    # println(typeof(tmp[1]))
+    # error("check activation tmp") ## These two are different meaning it is difficult to type tmp
     Yout .+= this.Bout*th3
     Ydata = Yout
     return Ydata, Yout, tmp

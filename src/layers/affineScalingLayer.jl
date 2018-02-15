@@ -30,7 +30,7 @@ end
 function apply(this::AffineScalingLayer{T},theta::Array{T},Y::Array{T},doDerivative=false) where {T <: Number}
 
     Y   = reshape(copy(Y),this.nData[1], this.nData[2],:)
-    dA  = (T)[]
+    dA  = Array{T,2}(0,0)
     nex = size(Y,3)
 
     s2,b2 = splitWeights(this,theta);
