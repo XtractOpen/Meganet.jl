@@ -19,7 +19,7 @@ end
 
 
 function apply(this::Connector{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T <: Number}
-    # tic()
+    
     nex = div(length(Y0),nFeatIn(this))
     Y0  = reshape(Y0,:,nex)
     Y = this.K*Y0 .+ this.b
@@ -28,7 +28,6 @@ function apply(this::Connector{T},theta::Array{T},Y0::Array{T},doDerivative=true
         Ydata = this.Q*Y
     end
     tmp = Y0;
-    # println("Measuring time for connector ",toc())
     return Ydata, Y, tmp
 end
 

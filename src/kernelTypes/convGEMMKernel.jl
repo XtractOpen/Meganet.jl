@@ -33,17 +33,18 @@ function getConvGEMMKernel(TYPE::Type,nImg,sK)
 	aux_sk4 = zeros(TYPE,nImg[1],nImg[2],sK[4]);
 	
 	KK = Array{Array{TYPE,2}}(sK[1],sK[2]);
-	prev_nex_AMV = 0
+	prev_nex_AMV = -1
 	AY = zeros(TYPE,0,0,0)
-	prev_nex_ATmv = 0
+	prev_nex_ATmv = -1
 	ATZ = zeros(TYPE,0,0,0)
 	dtheta = zeros(TYPE, sK[1], sK[2], sK[3], sK[4])
 
-	return convGEMMKernel{TYPE}(copy(nImg),copy(sK),shiftX,shiftT,aux_sk3,aux_sk4,KK,prev_nex_AMV, AY, prev_nex_ATmv, ATZ, dtheta);
+	return convGEMMKernel{TYPE}(copy(nImg),copy(sK),shiftX,shiftT,aux_sk3,aux_sk4,KK,prev_nex_AMV,AY,prev_nex_ATmv,ATZ,dtheta);
 end
 
 function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T<:Number}
     ## We assume that the data Y is held in the order XYCN.
+	
 	sK = this.sK;
 	nImg = this.nImg;
 	nex   = div(numel(Y),prod(nImgIn(this)))
@@ -74,18 +75,19 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T<:Numb
 	end
 	AY_out = reshape(this.AY,:,nex)
 	this.prev_nex_AMV = nex
-
+	
     return AY_out
 end
 
 function ATmv(this::convGEMMKernel{T},theta::Array{T},Zin::Array{T}) where {T<:Number}
+	
 	nImg  = this.nImg;
 	sK    = this.sK;
     nex   =  div(numel(Zin),prod(nImgOut(this)));
     K     = reshape(theta, sK[1], sK[2], sK[3], sK[4]);
 	Z     = reshape(Zin,nImg[1],nImg[2],sK[4],nex);
 	aux   = this.aux_sk4;
-	
+	# ATZ = this.ATZ
 	ATZk  = reshape(this.aux_sk3,nImg[1]*nImg[2],sK[3]); 
 	
 	if nex != this.prev_nex_ATmv
@@ -109,7 +111,7 @@ function ATmv(this::convGEMMKernel{T},theta::Array{T},Zin::Array{T}) where {T<:N
 	end
 	ATZ_out = reshape(this.ATZ,:,nex);
 	this.prev_nex_ATmv = nex
-
+	
     return ATZ_out
 end
 
@@ -129,6 +131,7 @@ function JthetaTmv(this::convGEMMKernel{T}, Zin::Array{T}, dummy::Array{T}, Yin:
 	Z	  = reshape(Zin, nImg[1]*nImg[2], this.sK[4], nex)
 	Zk    = reshape(this.aux_sk4, nImg[1]*nImg[2], this.sK[4]);
 	aux   = this.aux_sk3;
+	dtheta = zeros(T, sK[1], sK[2], sK[3], sK[4])
 	### reshape the kernels for gemm!:
 	KK = this.KK
 	for k1 = 1:sK[1]
@@ -143,10 +146,10 @@ function JthetaTmv(this::convGEMMKernel{T}, Zin::Array{T}, dummy::Array{T}, Yin:
 	### Assemble the kernels from gemm!:
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
-			@inbounds this.dtheta[k1, k2, :, :] = KK[k1, k2]
+			@inbounds dtheta[k1, k2, :, :] = KK[k1, k2]
 		end
 	end
-    dtheta_out = reshape(this.dtheta, sK[1], sK[2], sK[3], sK[4])
+    dtheta_out = reshape(dtheta, sK[1], sK[2], sK[3], sK[4])
     return dtheta_out
 end
 
