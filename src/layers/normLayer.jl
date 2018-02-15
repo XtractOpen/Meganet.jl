@@ -38,7 +38,6 @@ end
 
 function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=true) where {T <: Number}
 
-    # tic()
     # first organize Y with channels
     nf  = this.nData[2]::Int
     nex = div(length(Yin),nFeatIn(this))::Int
@@ -54,7 +53,6 @@ function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=t
     Yout ./= S2
 
     Yout2 = reshape(Yout,:,nex)
-    # println("Measuring time for batch norm ",toc())
     return Yout2, Yout2, dA
 end
 

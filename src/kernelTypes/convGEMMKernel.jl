@@ -1,15 +1,24 @@
 export convGEMMKernel,Amv,ATmv,transposeTest,getConvGEMMKernel
 using DistributedArrays
 mutable struct convGEMMKernel{T} <: AbstractConvKernel{T}
-    nImg    :: Array{Int,1}
-    sK      :: Array{Int,1}
-	shiftX  :: Array{Int,1}
-	shiftT  :: Array{Int,1}
-	aux_sk3 :: Array{T, 3}
-	aux_sk4 :: Array{T, 3}
+    nImg    		:: Array{Int,1}
+    sK      		:: Array{Int,1}
+	shiftX  		:: Array{Int,1}
+	shiftT  		:: Array{Int,1}
+	aux_sk3 		:: Array{T, 3}
+	aux_sk4 		:: Array{T, 3}
+	KK 				:: Array{Array{T,2}}
+
+	prev_nex_AMV	:: Int
+	AY				:: Array{T,3}
+	prev_nex_ATmv 	:: Int
+	ATZ 			:: Array{T,3}
+	dtheta 			:: Array{T,4}
+	
+
 end
 function getConvGEMMKernel(TYPE::Type,nImg,sK)
-
+	
 	if sK[1] == 1 && sK[2] == 1
 		shiftX = [0;0];
 		shiftT = [0;0];
@@ -22,8 +31,15 @@ function getConvGEMMKernel(TYPE::Type,nImg,sK)
 	
 	aux_sk3 = zeros(TYPE,nImg[1],nImg[2],sK[3]);
 	aux_sk4 = zeros(TYPE,nImg[1],nImg[2],sK[4]);
-	# error("new GEMM")
-	return convGEMMKernel{TYPE}(copy(nImg),copy(sK),shiftX,shiftT,aux_sk3,aux_sk4);
+	
+	KK = Array{Array{TYPE,2}}(sK[1],sK[2]);
+	prev_nex_AMV = 0
+	AY = zeros(TYPE,0,0,0)
+	prev_nex_ATmv = 0
+	ATZ = zeros(TYPE,0,0,0)
+	dtheta = zeros(TYPE, sK[1], sK[2], sK[3], sK[4])
+
+	return convGEMMKernel{TYPE}(copy(nImg),copy(sK),shiftX,shiftT,aux_sk3,aux_sk4,KK,prev_nex_AMV, AY, prev_nex_ATmv, ATZ, dtheta);
 end
 
 function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T<:Number}
@@ -31,28 +47,34 @@ function Amv(this::convGEMMKernel{T},theta::Array{T},Y::Array{T}) where {T<:Numb
 	sK = this.sK;
 	nImg = this.nImg;
 	nex   = div(numel(Y),prod(nImgIn(this)))
-    # compute convolution
+	KK = this.KK
+	
+	# compute convolution
 	Y     = reshape(Y,nImg[1],nImg[2],this.sK[3],nex);
-    AY    = Array{T, 3}(nImg[1]*nImg[2],this.sK[4],nex);
+	
+	if nex != this.prev_nex_AMV
+		this.AY    = Array{T, 3}(nImg[1]*nImg[2],this.sK[4],nex);
+	end
+	
 	aux   = this.aux_sk3;
     AYk   = reshape(this.aux_sk4,nImg[1]*nImg[2],sK[4]);
 	### reshape the kernels for gemm!:
 	K = reshape(theta, sK[1], sK[2], sK[3], sK[4])
-	KK = Array{Array{T,2}}(sK[1],sK[2]);
+		
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
 			@inbounds KK[k1,k2] = K[k1,k2,:,:]';
 		end
 	end
-	# AYk = @parallel vcat for k = 1:nex
+	
 	for k = 1:nex
 		AYk[:] = zero(T)
 		AYk = multConv2Dblock(Y,KK, AYk,aux,this.shiftX,this.shiftT,k);
-		@inbounds AY[:,:,k] = AYk;
-		
+		@inbounds this.AY[:,:,k] = AYk;
 	end
-	
-    AY_out = reshape(AY,:,nex);
+	AY_out = reshape(this.AY,:,nex)
+	this.prev_nex_AMV = nex
+
     return AY_out
 end
 
@@ -63,11 +85,16 @@ function ATmv(this::convGEMMKernel{T},theta::Array{T},Zin::Array{T}) where {T<:N
     K     = reshape(theta, sK[1], sK[2], sK[3], sK[4]);
 	Z     = reshape(Zin,nImg[1],nImg[2],sK[4],nex);
 	aux   = this.aux_sk4;
-	ATZ   = zeros(T,nImg[1]*nImg[2],sK[3],nex);
-	ATZk  = reshape(this.aux_sk3,nImg[1]*nImg[2],sK[3]);
-
+	
+	ATZk  = reshape(this.aux_sk3,nImg[1]*nImg[2],sK[3]); 
+	
+	if nex != this.prev_nex_ATmv
+		this.ATZ   = zeros(T,nImg[1]*nImg[2],sK[3],nex);
+	end
+	
 	### reshape the kernels for gemm!:
-	KK = Array{Array{T,2}}(sK[1],sK[2]);
+	KK = this.KK
+	
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
 			@inbounds KK[k1,k2] = K[k1,k2,:,:];
@@ -75,12 +102,14 @@ function ATmv(this::convGEMMKernel{T},theta::Array{T},Zin::Array{T}) where {T<:N
 	end
 	## flipping:
 	KK = flipdim(flipdim(KK,2),1);
-    for k = 1:nex
+	for k = 1:nex
 		ATZk[:] = zero(T)
 		ATZk = multConv2Dblock(Z,KK, ATZk,aux,this.shiftX,this.shiftT,k);
-		@inbounds ATZ[:,:,k] = ATZk;
+		@inbounds this.ATZ[:,:,k] = ATZk;
 	end
-    ATZ_out = reshape(ATZ,:,nex);
+	ATZ_out = reshape(this.ATZ,:,nex);
+	this.prev_nex_ATmv = nex
+
     return ATZ_out
 end
 
@@ -101,8 +130,7 @@ function JthetaTmv(this::convGEMMKernel{T}, Zin::Array{T}, dummy::Array{T}, Yin:
 	Zk    = reshape(this.aux_sk4, nImg[1]*nImg[2], this.sK[4]);
 	aux   = this.aux_sk3;
 	### reshape the kernels for gemm!:
-	dtheta = zeros(T, sK[1], sK[2], sK[3], sK[4])
-	KK = Array{Array{T, 2}}(sK[1], sK[2])
+	KK = this.KK
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
 			@inbounds KK[k1, k2] = zeros(T, sK[3], sK[4])
@@ -115,14 +143,12 @@ function JthetaTmv(this::convGEMMKernel{T}, Zin::Array{T}, dummy::Array{T}, Yin:
 	### Assemble the kernels from gemm!:
 	for k1 = 1:sK[1]
 		for k2 = 1:sK[2]
-			@inbounds dtheta[k1, k2, :, :] = KK[k1, k2]
+			@inbounds this.dtheta[k1, k2, :, :] = KK[k1, k2]
 		end
 	end
-    dtheta_out = reshape(dtheta, sK[1], sK[2], sK[3], sK[4])
+    dtheta_out = reshape(this.dtheta, sK[1], sK[2], sK[3], sK[4])
     return dtheta_out
 end
-
-
 
 function getColumn!(Z::Array{T},Zk::Array{T},k::Int64) where {T<:Number}
 for c=1:size(Z,2)
@@ -137,7 +163,6 @@ function multConv2Dblock(x::Array{T},K::Array{Array{T,2},2}, y::Array{T}, tin::A
 	## K - 3X3 array of Arrays
 	## x - a vector of length |nImgag+2|*cin (zero padded)
 	## y - a vector of length |nImgag|*cout
-
 	nImg1 = size(x,1);
 	nImg2 = size(x,2);
 	cin = size(x,3);
