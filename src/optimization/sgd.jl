@@ -26,7 +26,7 @@ end
 Base.display(this::SGD)=println("SGD(maxEpochs=$(this.maxEpochs),miniBatch=$(this.miniBatch),learningRate=$(this.learningRate),momentum=$(this.momentum),nesterov=$(this.nesterov),ADAM=$(this.ADAM))")
 
 function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array{T},Yv::Array{T},Cv::Array{T}) where {T}
-
+    
     # evaluate training and validation
     epoch = 1;
     xOld = copy(xc);
@@ -65,11 +65,19 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
                dJ = lr*dJk + this.momentum*dJ
             end
             xc = xc - dJ
+            # xc = xc - zero(T)*dJ
+            # ss = randn(T,length(dJ))*T(1e-3)
+            # J1, = evalObjFctn(objFun,xc,Y,C)
+            # J2, = evalObjFctn(objFun,xc+ss,Y,C)
+            # println(abs(J1-J2)," ", abs(J1-J2-dot(dJk[:],ss[:])))
         end
         # we sample 2^12 images from the training set for displaying the objective.
         idt     = ids[1:min(nex,2^12)]
         Jc,para   = evalObjFctn(objFun,xc,Y[:,idt],C[:,idt]);
         Jval,pVal = getMisfit(objFun,xc,Yv,Cv,false);
+        
+        
+
 
         if this.out;
             @printf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jc 100*(1-para[3]/para[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])

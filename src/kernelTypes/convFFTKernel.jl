@@ -74,7 +74,7 @@ function ATmv(this::convFFTKernel{T},theta::Array{T},Z::Array{T}) where {T<:Numb
         #T  = Sk.*Yh;
         #sumT = sum(T,3)
         sumT = hadamardSum(sumT,Yh,Sk)
-        ATY[:,:,k] = sumT[:,:,1];
+        ATY[:,:,k,:] = sumT[:,:,1,:];
     end
     ATY = real(ifft2(ATY));
     ATY = reshape(ATY,:,nex);

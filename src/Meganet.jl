@@ -17,6 +17,7 @@ include("kernelTypes/sparseKernel.jl")
 include("kernelTypes/convFFTKernel.jl");
 include("kernelTypes/convGEMMKernel.jl");
 include("kernelTypes/convCircKernel.jl");
+# include("kernelTypes/convDiagKernel.jl");
 
 
 

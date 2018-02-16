@@ -1,6 +1,6 @@
 using MAT, Meganet
-
-n = 256;
+# BLAS.set_num_threads(1)
+n = 512;
 Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/");
 
 # using PyPlot
@@ -72,7 +72,7 @@ pRegTh = getTikhonovReg(TYPE;alpha=4e-4)
 pRegW = getTikhonovReg(TYPE;alpha=4e-4)
 pLoss = getSoftMaxLoss(TYPE);
 objFun = dnnObjFctn(net,pLoss,pRegTh,pRegW)
-opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=1,miniBatch=miniBatchSize,out=true)
+opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=1,miniBatch=miniBatchSize,out=true, nesterov=true)
 
 W      = 0.1*vec(randn(TYPE,10,nFeatOut(net)+1));
 W = min.(W,.2);
