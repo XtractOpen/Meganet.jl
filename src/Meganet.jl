@@ -7,9 +7,6 @@ import JLD, BenchmarkTools
 include("AbstractMeganetElement.jl")
 
 include("activations/tanhActivation.jl")
-include("activations/reluActivation.jl")
-include("activations/identityActivation.jl")
-
 
 include("integrators/NN.jl")
 include("integrators/connector.jl")
@@ -26,6 +23,7 @@ include("kernelTypes/convCircKernel.jl");
 
 include("layers/affineScalingLayer.jl")
 include("layers/normLayer.jl")
+include("integrators/batchNormNN.jl")
 include("layers/doubleSymLayer.jl")
 include("layers/singleLayer.jl")
 

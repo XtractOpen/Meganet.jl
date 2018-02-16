@@ -1,18 +1,18 @@
-export NN,getNN,initTheta
-# using TimerOutputs
-# to = TimerOutput()
+export batchNormNN,getbatchNormNN,initTheta
+
 """
-NN Neural Network block
+batchNormNN Neural Network block
 
  Y_k+1 = layer{k}(theta{k},Y_k)
 """
-mutable struct NN{T, TQ <: Union{Array{T,2},UniformScaling{Int}}} <: AbstractMeganetElement{T}
-    layers   ::Array{AbstractMeganetElement{T}, 1} # layers of Neural Network, cell array
+#TODO: Can probably optimize some functions using the knowledge that we only have a norm and an AFS layer. 
+mutable struct batchNormNN{T,TQ <: Union{Array{T,2},UniformScaling{Int}}} <: AbstractMeganetElement{T}
+    layers   ::Tuple{normLayer{T}, AffineScalingLayer{T}}
     outTimes ::Array{Int,1}
-    Q        :: TQ
+    Q        ::TQ
 end
 
-function getNN(layers::Array{AbstractMeganetElement{T}},outTimes=eye(Int,length(layers))[:,end],Q=I) where {T <: Number}
+function getbatchNormNN(layers::Tuple{normLayer{T}, AffineScalingLayer{T}},outTimes=eye(Int,length(layers))[:,end],Q=I) where {T <: Number}
 	nt   = length(layers)
     nout = nFeatOut(layers[1])
 
@@ -22,38 +22,28 @@ function getNN(layers::Array{AbstractMeganetElement{T}},outTimes=eye(Int,length(
         end
         nout = nFeatOut(layers[k])
     end
-	return NN(layers,outTimes,Q);
-end
-
-
-import Base.display
-function display(this::NN)
-    println("-- Neural Network --")
-    println("nLayers: \t $(length(this.layers))")
-    println("nFeatIn: \t $(nFeatIn(this))")
-    println("nFeatOut: \t $(nFeatOut(this))")
-    println("nTheta: \t $(nTheta(this))")
+	return batchNormNN(layers,outTimes,Q);
 end
 
 # ---------- counting thetas, input and output features -----
-function nTheta(this::NN)
+function nTheta(this::batchNormNN)
     n::Int = 0;
     for k=1:length(this.layers)
         n += nTheta(this.layers[k]);
     end
     return n
 end
-nFeatIn(this::NN)   = nFeatIn(this.layers[1])
-nFeatOut(this::NN)::Int = nFeatOut(this.layers[end])
+nFeatIn(this::batchNormNN)   = nFeatIn(this.layers[1])
+nFeatOut(this::batchNormNN) = nFeatOut(this.layers[end])
 
-function nDataOut(this::NN)
+function nDataOut(this::batchNormNN)
     n=0;
     for k=1:length(this.layers)
         n = n+this.outTimes[k]* nFeatOut(this.layers[k]);
     end
 end
 
-function initTheta(this::NN{T}) where {T <: Number}
+function initTheta(this::batchNormNN{T}) where {T <: Number}
     theta = zeros(T,0)
     for k=1:length(this.layers)
         theta = [theta; vec(initTheta(this.layers[k]))]
@@ -63,11 +53,11 @@ end
 
 
 # --------- forward problem ----------
-function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},doDerivative=true) where {T<:Number}
+function apply(this::batchNormNN{T},theta::Array{T},Y0::Array{T,2},doDerivative=true) where {T<:Number}
     Y::Array{T,2}  = copy(Y0)
     nex = div(length(Y),nFeatIn(this))::Int
     nt = length(this.layers)
-   
+
     tmp = Array{Any}(nt+1,2)
     if doDerivative
         tmp[1,1] = Y0
@@ -77,6 +67,7 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},doDerivative=true) whe
     cnt = 0
     for i=1:nt
         ni = nTheta(this.layers[i])::Int
+
         Yd::Array{T,2}, Y, tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
         if this.outTimes[i]==1
             Ydata = [Ydata; this.Q*Yd]
@@ -86,11 +77,12 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},doDerivative=true) whe
         end
         cnt = cnt + ni
     end
+
     return Ydata,Y,tmp
 end
 
 # -------- Jacobian matvecs --------
-function JYmv(this::NN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+function JYmv(this::batchNormNN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
     nex = div(length(Y),nFeatIn(this))
     nt = length(this.layers)
     cnt = 0
@@ -106,7 +98,7 @@ function JYmv(this::NN{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T
     return dYdata, dY
 end
 
-function  Jmv(this::NN{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+function  Jmv(this::batchNormNN{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
     nex = div(length(Y),nFeatIn(this))
     nt = length(this.layers);
     if isempty(dY)
@@ -128,7 +120,7 @@ function  Jmv(this::NN{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array
 end
 
 # -------- Jacobian' matvecs --------
-function JYTmv(this::NN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+function JYTmv(this::batchNormNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
 
     nex = div(length(Y),nFeatIn(this));
     if !isempty(Wdata)
@@ -157,42 +149,42 @@ function JYTmv(this::NN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{
 end
 
 
-function JthetaTmv(this::NN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
-	return JTmv(this,Wdata,W,theta,Y,tmp)[1]; # TODO: Why calculating both, Can be more efficient?
+function JthetaTmv(this::batchNormNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+	return JTmv(this,Wdata,W,theta,Y,tmp)[1];
 end
 
 
 
-function JTmv(this::NN{T},Wdata::Array{T},Win::Array{T},theta::Array{T},Y::Array{T},tmp)::Tuple{Array{T,1},Array{T,1}} where {T <: Number}
-    # WOW THIS IS HACKED BIG TIME. Need to find a way to type stabalize W (not ez)
-    #TODO: Make this type stable - Some internals are not stable
-    nex = div(length(Y),nFeatIn(this)::Int)
+function JTmv(this::batchNormNN,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
+    
+    nex = div(length(Y),nFeatIn(this))
 
     if size(Wdata,1)>0
         Wdata = reshape(Wdata,:,nex)
     end
-
-    if length(Win)==0
+    if length(W)==0
         W = zeros(T,nFeatOut(this),nex)
-    else
-        W = reshape(Win,:,nex)
+    elseif length(W)>1
+        W     = reshape(W,:,nex)
     end
-    dtheta = zero(T)*theta
+
+    dtheta = 0*theta
     nt = length(this.layers)
 
     cnt = 0; cnt2 = 0
     for i=nt:-1:1
         if this.outTimes[i]==1
-            nn = nFeatOut(this.layers[i])::Int
+            nn = nFeatOut(this.layers[i])
             W += this.Q'*Wdata[end-cnt2-nn+1:end-cnt2,:]
             cnt2 = cnt2 + nn
         end
-        ni     = nTheta(this.layers[i])::Int
+        
+        ni     = nTheta(this.layers[i])
 
         dmbi,W = JTmv(this.layers[i],W,zeros(T,0),theta[end-cnt-ni+1:end-cnt],tmp[i,1],tmp[i,2])
         dtheta[end-cnt-ni+1:end-cnt]  = dmbi
-        cnt += ni
+        cnt = cnt+ni
     end
-
     return  vec(dtheta), vec(W)
+
 end

@@ -1,6 +1,6 @@
 export singleLayer,getSingleLayer
 
-mutable struct singleLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{NN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
+mutable struct singleLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNormNN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
         activation :: Function # activation function
         K          :: TK # transformation type
         nLayer     :: TN # normalization layer
@@ -125,7 +125,7 @@ function JTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T}
 
     dY   = Kop'*reshape(dAZ,:,nex)
     dtheta = [vec(dth1); vec(dth2); vec(dth3); vec(dth4)]
-
+    
     return dtheta, dY
 
 end

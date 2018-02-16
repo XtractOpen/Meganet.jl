@@ -5,7 +5,7 @@ export DoubleSymLayer,getDoubleSymLayer
 
  Y(theta,Y0) = K(th1)'(activation( K(th1)\*Y0 + trafo.Bin\*th2))) + trafo.Bout\*th3
 """
-mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{NN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
+mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNormNN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
     activation  :: Function   # activation function
     K           :: TK   # Kernel model, e.g., convMod
     nLayer      :: TN   # normalization layer
@@ -15,7 +15,7 @@ end
 
 
 function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T};
-                           Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE, nFeatIn(K),0),
+                           Bin=zeros(nFeatOut(K),0),Bout=zeros(nFeatIn(K),0),
                            activation=tanhActivation) where {T <: Number}
     BinT = convert.(T, Bin)
     BoutT = convert.(T, Bout)
@@ -205,7 +205,7 @@ function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
     KopY      = Amv(this.K, th1, Y)
     dth4, dAZ2  = JTmv(this.nLayer,dAZ1,zeros(T,0),th4,KopY,tmp[1])
     dth1      = JthetaTmv(this.K,dAZ2,zeros(T,0),Y)
-    dth1      = dth1 + JthetaTmv(this.K,A,(T)[],Z)
+    dth1 += JthetaTmv(this.K,A,(T)[],Z)
     dtheta    = [-vec(dth1); -vec(dth2); vec(dth3);-vec(dth4)]
 
     dAZ_out = reshape(dAZ2,:,nex)
