@@ -4,3 +4,4 @@ MAT
 PkgDev
 JLD
 BenchmarkTools
+DistributedArrays

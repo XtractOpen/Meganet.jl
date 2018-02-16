@@ -1,5 +1,6 @@
 export NN,getNN,initTheta
-
+# using TimerOutputs
+# to = TimerOutput()
 """
 NN Neural Network block
 
@@ -72,7 +73,7 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},tmp,doDerivative=true)
     end
 
     if doDerivative
-        tmp[1,1] = Y0
+        tmp[1,1] = copy(Y0)
     end
 
     Ydata::Array{T,2} = zeros(T,0,nex)
@@ -80,12 +81,10 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},tmp,doDerivative=true)
     for i=1:nt
         ni = nTheta(this.layers[i])::Int
         if !isassigned(tmp,i,2)
-            println("assigning")
             tmp[i,2] = Array{Any}(0)
-        else
-            println("not assigning")
         end
         Yd::Array{T,2}, Y, tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,tmp[i,2],doDerivative)
+
         if this.outTimes[i]==1
             Ydata = [Ydata; this.Q*Yd]
         end
@@ -94,7 +93,6 @@ function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},tmp,doDerivative=true)
         end
         cnt = cnt + ni
     end
-
     return Ydata,Y,tmp
 end
 

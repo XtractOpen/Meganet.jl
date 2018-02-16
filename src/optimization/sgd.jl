@@ -67,11 +67,15 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
                dJ = lr*dJk + this.momentum*dJ
             end
             xc = xc - dJ
+            # xc = xc - zero(T)*dJ
+            # ss = randn(T,length(dJ))*T(1e-3)
+            # J1, = evalObjFctn(objFun,xc,Y,C)
+            # J2, = evalObjFctn(objFun,xc+ss,Y,C)
+            # println(abs(J1-J2)," ", abs(J1-J2-dot(dJk[:],ss[:])))
         end
         # we sample 2^12 images from the training set for displaying the objective.
         idt     = ids[1:min(nex,2^12)]
-        Jc,para   = evalObjFctn(objFun,xc,Y[:,idt],C[:,idt],tmp); #TODO: Do we really wanna train here?
-
+        Jc,para   = evalObjFctn(objFun,xc,Y[:,idt],C[:,idt],tmp); #TODO: Do we really wanna do this??
         Jval,pVal = getMisfit(objFun,xc,Yv,Cv,tmp,false);
 
         if this.out;
