@@ -9,7 +9,7 @@ mutable struct singleLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNorm
 
 end
 
-function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),activation=tanhActivation)
+function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),activation=tanhActivation!)
 	singleLayer(activation,K,nLayer,Bin,Bout);
 end
 
@@ -31,6 +31,8 @@ function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},tmp,doDerivati
 
     if isempty(tmp)
         tmp = Array{Any}(2)
+        tmp[1] = Array{Any}(0,0)
+        tmp[2] = Array{Any}(0)
     end
     nex = div(length(Yin),nFeatIn(this))
     Y   = reshape(Yin,:,nex)
@@ -38,18 +40,10 @@ function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},tmp,doDerivati
 
     Yout::Array{T,2}     =  getOp(this.K,th1)*Y 
     Yout .+= this.Bin * th2
-    # if !isassigned(tmp,1)
-    #     tmp[1] = Array{Any}(0) #TODO get batchNormNN to return a 1D arg maybe? Just think about it
-    # end
-    Yout,dummy,tmp[1] = apply(this.nLayer,th4,Yout,doDerivative)
+    Yout,dummy,tmp[1] = apply(this.nLayer,th4,Yout,tmp[1],doDerivative)
 
-    # if !isassigned(tmp,2)
-    #     tmp[2] = Array{Any}(0) #TODO We know this one is an array of T
-    # end
-    Yout,tmp[2]  = this.activation(Yout,doDerivative)
-    # println(typeof(tmp[2]))
-    # println(typeof(tmp[1]))
-    # error("check activation tmp") ## These two are different meaning it is difficult to type tmp
+    Yout,tmp[2]  = this.activation(Yout,tmp[2],doDerivative)
+
     Yout .+= this.Bout*th3
     Ydata = Yout
     return Ydata, Yout, tmp

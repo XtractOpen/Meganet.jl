@@ -52,12 +52,19 @@ function  apply(this::ResNN{T},theta_in::Array{T},Y0::Array{T},tmp,doDerivative=
     if isempty(tmp)
         tmp = Array{Any}(this.nt+1,2)
     end
+
+    if doDerivative
+        if isassigned(tmp,1,1)
+            tmp11 = tmp[1,1]
+            tmp11 .= Y0
+        else
+            tmp[1,1] = copy(Y0)
+        end
+    end
+
     nex = div(length(Y0),nFeatIn(this))
     Y   = reshape(Y0,:,nex)
 
-    if doDerivative
-        tmp[1,1] = Y0
-    end
 
     theta = reshape(theta_in,:,this.nt)
 
@@ -68,12 +75,19 @@ function  apply(this::ResNN{T},theta_in::Array{T},Y0::Array{T},tmp,doDerivative=
         end
         Z,dummy,tmp[i,2] = apply(this.layer,theta[:,i],Y,tmp[i,2],doDerivative)
         Y +=  this.h * Z
-        if doDerivative
-            tmp[i+1,1] = Y
-        end
         if this.outTimes[i]==1
             Ydata = [Ydata;this.Q*Y]
         end
+
+        if doDerivative
+            if isassigned(tmp,i+1,1)
+                tmp1 = tmp[i+1,1]
+                tmp1 .= Y
+            else
+                tmp[i+1,1] = copy(Y)
+            end
+        end
+
     end
     return Ydata,Y,tmp
 end

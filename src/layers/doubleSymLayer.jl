@@ -16,7 +16,7 @@ end
 
 function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T};
                            Bin=zeros(nFeatOut(K),0),Bout=zeros(nFeatIn(K),0),
-                           activation=tanhActivation) where {T <: Number}
+                           activation=tanhActivation!) where {T <: Number}
     BinT = convert.(T, Bin)
     BoutT = convert.(T, Bout)
     return DoubleSymLayer(activation,K,nLayer,BinT,BoutT);
@@ -40,6 +40,8 @@ end
 function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},tmp,doDerivative=true) where {T<:Number}
     if isempty(tmp)
         tmp = Array{Any}(2)
+        tmp[1] = Array{Any}(0,0)
+        tmp[2] = Array{Any}(0,0)
     end
     #QZ = []
     nex = div(length(Yin),nFeatIn(this))::Int
@@ -47,18 +49,24 @@ function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},tmp,doDer
 
     theta1,theta2,theta3,theta4 = splitWeights(this,theta)
     Kop    = getOp(this.K,theta1)
-    KY     = Kop*Y
+    KY     = Kop*Y # TODO: Look into making convolution in place
 
-    #TODO: check is assigned and pass in tmp[1]
-    KY,dummy,tmp[1] = apply(this.nLayer,theta4,KY,doDerivative)
+    KY,dummy,tmp[1] = apply(this.nLayer,theta4,KY,tmp[1],doDerivative)
     Yt     = KY
     if !isempty(theta2)
      Yt .+= this.Bin*theta2
     end
-    tmp[2] = copy(Yt)
 
-    #TODO: check is assigned and pass in tmp[1] wait why do we not update tmp[2]?
-    Z::Array{T,2},      = this.activation(Yt,doDerivative)
+    if doDerivative
+        if isempty(tmp[2])
+            tmp[2] = copy(Yt)
+        else
+            tmp2 = tmp[2]
+            tmp2 .= Yt
+        end
+    end
+
+    Z::Array{T,2},      = this.activation(Yt,[],false) #We don't want to do derivatives here?
     Z      = -(Kop'*Z)
     if !isempty(theta3)
         Z  .+= this.Bout*theta3
@@ -92,7 +100,7 @@ end
 
 function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
 
-    A,dA = this.activation(tmp[2],true)
+    A,dA = this.activation(tmp[2],[],true)
     th1, th2,th3,th4    = splitWeights(this,theta)
     dth1,dth2,dth3,dth4 = splitWeights(this,dtheta)
 
@@ -109,7 +117,7 @@ end
 
 function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
 
-    dA = this.activation(tmp[2],true)[2]
+    dA = this.activation(tmp[2],[],true)[2]
 
     nex = div(length(dY),nFeatIn(this))
     dY  = reshape(dY,:,nex)
@@ -124,7 +132,7 @@ function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},t
 end
 
 function Jmv(this::DoubleSymLayer{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
-    A,dA = this.activation(copy(tmp[2]),true)
+    A,dA = this.activation(copy(tmp[2]),[],true)
     nex = div(length(Y),nFeatIn(this))
 
     th1, th2,th3,th4    = splitWeights(this,theta)
@@ -161,7 +169,7 @@ function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Ar
     Z         = reshape(Z,:,nex)
     th1,th2,th3,th4  = splitWeights(this,theta)
     Kop       = getOp(this.K,th1)
-    A,dA      = this.activation(tmp[2],true)
+    A,dA      = this.activation(tmp[2],[],true)
 
     dth3      = vec(sum(this.Bout'*Z,2))
     dAZ       = dA.*(Kop*Z)
@@ -181,7 +189,7 @@ function JYTmv(this::DoubleSymLayer{T},Zin::Array{T},dummy::Array{T},theta::Arra
     Z         = reshape(Zin,:,nex)
     th1,th2,th3,th4  = splitWeights(this,theta)
     Kop       = getOp(this.K,th1)
-    A,dA      = this.activation(tmp[2],true)
+    A,dA      = this.activation(tmp[2],[],true)
 
     dAZ       = dA.*(Kop*Z)
     dAZ       = JYTmv(this.nLayer,dAZ,(T)[],th4,Kop*Y,tmp[1])
@@ -199,7 +207,7 @@ function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
     Y         = reshape(Yin,:,nex)
     th1, th2, th3, th4  = splitWeights(this,theta)
     #Kop       = getOp(this.K,th1)
-    A::Array{T,2}, dA::Array{T,2}    = this.activation(Yt,true)
+    A::Array{T,2}, dA::Array{T,2}    = this.activation(Yt,[],true)
 
     dth3      = vec(sum(this.Bout'*Z,2))
 
