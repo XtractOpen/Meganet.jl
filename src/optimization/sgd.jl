@@ -36,10 +36,6 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
     dJ = zeros(T,size(xc))
     mJ = zeros(T,size(xc))
     vJ = zeros(T,size(xc))
-    #if this.ADAM              ## redundant
-    #    mJ = zeros(T,size(xc));
-    #    vJ = zeros(T,size(xc));
-    #end
     beta2 = convert(T,0.999)
     beta1 = this.momentum
     lr    = this.learningRate
@@ -52,40 +48,38 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
     Cd = distribute(C, dist = (1, nw))
     println("Using $(nw) workers...")
 
-
     while epoch <= this.maxEpochs
 
         # Train on all workers
-        println("--------------------------------------------")
-        #for pid in Yd.pids
         @sync for pid in Yd.pids
-            #@fetchfrom pid train(this, objFun, xc, Yd, Cd, beta1, beta2)
             @async @fetchfrom pid train(this, objFun, xc, Yd, Cd, beta1, beta2)
         end
-        println("--------------------------------------------")
 
         # we sample 2^12 images from the training set for displaying the objective.
         xc = Meganet.XC
         nex = size(Y,2)
-        n_total = min(nex,2^12)
+        n_total = min(nex,2^10)
         n_worker = div(n_total, nw)
 
         JcA     = Array{T,1}(nw)
         hisFA    = Array{Array{T,1},1}(nw)
-        dJA      = Array{Array{T,1},1}(nw)
+        Jval = zero(T)
+        pVal = Array{T,1}()
 
-        for (i, pid) in enumerate(Yd.pids)
-            JcA[i], hisFA[i], dJA[i] = evalObjFctn_local(objFun, xc, Yd, Cd, n_worker)
+        @sync begin
+                for (i, pid) in enumerate(Yd.pids)
+                    @async JcA[i], hisFA[i] = @fetchfrom pid evalObjFctn_local(objFun, xc, Yd, Cd, n_worker)
+                end
+
+                # Currently validation data is on master so this is local
+                @async Jval,pVal = @fetchfrom 1 getMisfit(objFun,xc,Yv,Cv,false);
         end
 
         Jc = sum(JcA)
         hisF = sum(hisFA)
-        dJ = sum(dJA)
-
-        Jval,pVal   = getMisfit(objFun,xc,Yv,Cv,false);
 
         if this.out;
-            @printf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jc 100*(1-dJ/hisF) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])
+            @printf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jc 100*(1-hisF[3]/hisF[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])
         end
 
         xOld   = copy(xc);
@@ -107,12 +101,11 @@ function evalObjFctn_local(objFun::dnnObjFctn, xc::Array{T,1}, Y::DArray{T,2}, C
 
     nex = size(Y_local,2)
     ids = randperm(nex)
-    idt = ids[1:n]
+    idt = ids[1:min(n, nex)]
 
-    Jc, hisF, dJ = evalObjFctn(objFun,xc,Y_local[:,idt], C_local[:,idt]);
+    Jc, hisF, dJ = evalObjFctn(objFun,xc,Y_local[:,idt], C_local[:,idt], false);
 
     return Jc, hisF, dJ
-
 end
 
 """
@@ -130,7 +123,6 @@ function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::DArray{T,2},
     dJ = zeros(T,size(xc))
 
     for k=1:ceil(Int64,nex/this.miniBatch)
-        println("k  : $k")
         idk = ids[(k-1)*this.miniBatch+1: min(k*this.miniBatch,nex)]
         if this.nesterov && !this.ADAM
             Jk,dummy,dJk = evalObjFctn(objFun, xc-this.momentum*dJ, Y_local[:,idk], C_local[:,idk]);

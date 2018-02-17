@@ -1,7 +1,7 @@
 using MAT, Meganet
 BLAS.set_num_threads(1)
 
-n = 256;
+n = 2^12;
 Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/");
 
 # using PyPlot
@@ -10,7 +10,7 @@ Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/"
 # y[:,:,1] = y[:,:,1]';y[:,:,2] = y[:,:,2]';y[:,:,3] = y[:,:,3]';
 # figure(); imshow(y)
 
-miniBatchSize = 32;
+miniBatchSize = 64;
 nImg = [32; 32]
 cin  = 3
 nc   = [16;32;64;64]
@@ -74,7 +74,7 @@ pRegW = getTikhonovReg(TYPE;alpha=4e-4)
 pLoss = getSoftMaxLoss(TYPE);
 objFun = dnnObjFctn(net,pLoss,pRegTh,pRegW)
 #opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=20,miniBatch=miniBatchSize,out=true)
-opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=20,miniBatch=miniBatchSize,out=true)
+opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=50,miniBatch=miniBatchSize,out=true)
 
 W      = 0.1*vec(randn(TYPE,10,nFeatOut(net)+1));
 W = min.(W,.2);
@@ -82,7 +82,7 @@ W = max.(W,-.2);
 W = convert(Array{TYPE},W);
 
 solve(opt, objFun, [vec(theta); vec(W)], Y_train, C_train, Y_test, C_test)
-#@time solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
+@time solve(opt, objFun, [vec(theta);vec(W)], Y_train, C_train, Y_test, C_test)
 
 # Profile.clear()
 # Profile.clear_malloc_data()

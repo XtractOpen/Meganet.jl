@@ -47,7 +47,10 @@ function evalObjFctn(this::dnnObjFctn,thetaW::Array{T},Y::Array{T},C::Array{T},d
     RW,dRW, = regularizer(this.pRegW,W)
 
     Jc = Fc + Rth + RW
-    dJ = [dFth+dRth; dFW+dRW]
+    dJ = zeros(T, 1)
+    if doDerivative
+        dJ = [dFth+dRth; dFW+dRW]
+    end
 
     return convert(T,Jc),hisF,convert(Array{T},dJ)
 end
