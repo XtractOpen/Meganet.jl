@@ -9,13 +9,15 @@ for TYPE=[Float64,Float32]
     K = getConvFFTKernel(TYPE,nImg,sK)
 
     @testset  "adjoint test $TYPE" begin
+	nex = 2;
     theta = initTheta(K)
     A     = getOp(K,theta);
-    v     = randn(TYPE,nFeatIn(K))
-    w     = randn(TYPE,nFeatOut(K))
+    v     = randn(TYPE,nFeatIn(K),nex)
+    w     = randn(TYPE,nFeatOut(K),nex)
 
-    t1    = dot(w,A*v)
-    t2    = dot(v,A'*w)
+    t1    = vecdot(w,A*v)
+    t2    = vecdot(v,A'*w)
+	
     # println("adjointTest t1=$t1\t t2=$t2")
     @test norm(t1-t2)/norm(t1) < 1e3*eps(TYPE)
     end
@@ -23,7 +25,7 @@ for TYPE=[Float64,Float32]
     @testset "derivative Test" begin
     th  = initTheta(K);
     dth = initTheta(K);
-    nex = 1;
+    nex = 2;
     Y  = randn(TYPE,nFeatIn(K),nex)+nex;
     Z  = randn(TYPE,nFeatOut(K),nex)-nex;
 

@@ -19,6 +19,7 @@ end
 
 
 function apply(this::Connector{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T <: Number}
+    
     nex = div(length(Y0),nFeatIn(this))
     Y0  = reshape(Y0,:,nex)
     Y = this.K*Y0 .+ this.b
