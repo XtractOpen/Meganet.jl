@@ -26,9 +26,25 @@ end
 Base.display(this::SGD)=println("SGD(maxEpochs=$(this.maxEpochs),miniBatch=$(this.miniBatch),learningRate=$(this.learningRate),momentum=$(this.momentum),nesterov=$(this.nesterov),ADAM=$(this.ADAM))")
 
 function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array{T},Yv::Array{T},Cv::Array{T}) where {T}
+<<<<<<< HEAD
 
     global XC
     XC = xc
+=======
+
+    # evaluate training and validation
+    epoch = 1;
+    xOld = copy(xc);
+    dJ = zeros(T,size(xc));
+    mJ = zeros(T,size(xc));
+    vJ = zeros(T,size(xc));
+    if this.ADAM
+        mJ = zeros(T,size(xc));
+        vJ = zeros(T,size(xc));
+    end
+    beta2 = convert(T,0.999);
+    beta1 = this.momentum;
+>>>>>>> dev
 
     # evaluate training and validation
     epoch = 1

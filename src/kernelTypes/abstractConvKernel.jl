@@ -38,7 +38,7 @@ end
 
 function initTheta(this::AbstractConvKernel{T}) where {T <: Number}
 
-    sd    = T(0.1);
+    sd    = T(0.01);
     theta = sd*randn(T,prod(this.sK));
     #id1 = find(theta>2*sd);
     #theta(id1[:]) = randn(numel(id1),1);

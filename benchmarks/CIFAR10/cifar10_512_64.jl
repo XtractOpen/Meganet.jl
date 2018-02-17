@@ -68,7 +68,7 @@ pLoss = getSoftMaxLoss(TYPE);
 objFun = dnnObjFctn(net,pLoss,pRegTh,pRegW)
 opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=1,miniBatch=miniBatchSize,out=true)
 
-W      = 0.1*vec(randn(TYPE,10,nFeatOut(net)+1));
+W      = 0.01*vec(randn(TYPE,10,nFeatOut(net)+1));
 W = min.(W,.2);
 W = max.(W,-.2);
 W = convert(Array{TYPE},W);

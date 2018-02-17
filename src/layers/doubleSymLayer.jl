@@ -14,7 +14,7 @@ mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchN
 end
 
 
-function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T},
+function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T};
                            Bin=zeros(nFeatOut(K),0),Bout=zeros(nFeatIn(K),0),
                            activation=tanhActivation) where {T <: Number}
     BinT = convert.(T, Bin)
@@ -79,8 +79,8 @@ end
 
 function initTheta(this::DoubleSymLayer{T})  where {T<:Number}
     theta = [vec(initTheta(this.K));
-    T(0.1)*ones(T,size(this.Bin,2),1);
-    T(0.1)*ones(T,size(this.Bout,2),1);
+    T(0.01)*ones(T,size(this.Bin,2),1);
+    T(0.01)*ones(T,size(this.Bout,2),1);
     initTheta(this.nLayer)];
     return theta
 end
