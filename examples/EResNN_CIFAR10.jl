@@ -1,7 +1,7 @@
 using MAT, Meganet
 BLAS.set_num_threads(1)
 
-n = 512;
+n = 256;
 Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/");
 
 # using PyPlot
@@ -10,7 +10,7 @@ Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/"
 # y[:,:,1] = y[:,:,1]';y[:,:,2] = y[:,:,2]';y[:,:,3] = y[:,:,3]';
 # figure(); imshow(y)
 
-miniBatchSize = 64;
+miniBatchSize = 32;
 nImg = [32; 32]
 cin  = 3
 nc   = [16;32;64;64]
@@ -81,7 +81,7 @@ W = min.(W,.2);
 W = max.(W,-.2);
 W = convert(Array{TYPE},W);
 
-Juno.@enter solve(opt, objFun, [vec(theta); vec(W)], Y_train, C_train, Y_test, C_test)
+solve(opt, objFun, [vec(theta); vec(W)], Y_train, C_train, Y_test, C_test)
 #@time solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 
 # Profile.clear()
