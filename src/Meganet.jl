@@ -1,6 +1,6 @@
 module Meganet
 
-using LinearOperators, MAT, Base.Test
+using LinearOperators, MAT, Base.Test, DistributedArrays
 
 import JLD, BenchmarkTools
 
