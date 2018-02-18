@@ -1,16 +1,17 @@
 export singleLayer,getSingleLayer
 
 mutable struct singleLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNormNN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
-        activation :: Function # activation function
-        K          :: TK # transformation type
+		activation :: Function # activation function
+		dactivation :: Function # derivative of activation function
+		K          :: TK # transformation type
         nLayer     :: TN # normalization layer
         Bin        :: Array{T} # bias inside nonlinearity
         Bout       :: Array{T} # bias outside nonlinearity
-
 end
 
-function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),activation=tanhActivation)
-	singleLayer(activation,K,nLayer,Bin,Bout);
+function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),
+	                Bout=zeros(TYPE,nFeatOut(K),0),activation=x->tanh(x),dactivation=x->1-tanh(x)^2)
+	singleLayer(activation,dactivation,K,nLayer,Bin,Bout);
 end
 
 
@@ -36,7 +37,7 @@ function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},doDerivative=f
     tmp    = copy(Yout)
     Yout,  = apply(this.nLayer,th4,Yout,false)
     Yout .+= this.Bin * th2
-	Yout,   = this.activation(Yout,false)
+	map!(this.activation,Yout,Yout)
     Yout .+= this.Bout*th3
     Ydata  = Yout
     return Ydata, Yout, tmp
@@ -71,10 +72,10 @@ function Jthetamv(this::singleLayer{T},dtheta::Array{T},theta::Array{T},Yin::Arr
     dth1,dth2,dth3,dth4 = splitWeights(this,dtheta)
 	
 	# re-compute derivative of activation
-	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
-    Yout .+= this.Bin * th2
-	A,dA   = this.activation(Yout,true)
+	dA                = copy(tmp);
+    dA,dummy,tmpNL  = apply(this.nLayer,th4,dA)
+    dA .+= this.Bin * th2
+	map!(this.dactivation,dA,dA)
     
 	
     dZ::Array{T,2} = Jthetamv(this.K,dth1,th1,Y) 
@@ -91,10 +92,10 @@ function JYmv(this::singleLayer{T},dYin::Array{T},theta::Array{T},Y::Array{T},tm
     th1,th2,th3,th4 = splitWeights(this,theta)
  
 	# re-compute derivative of activation
-	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
-    Yout .+= this.Bin * th2
-	A,dA   = this.activation(Yout,true)
+	dA                = copy(tmp);
+    dA,dummy,tmpNL  = apply(this.nLayer,th4,dA)
+    dA .+= this.Bin * th2
+	map!(this.dactivation,dA,dA)
  
  
     Kop  = getOp(this.K,th1)
@@ -111,10 +112,10 @@ function Jmv(this::singleLayer{T},dtheta::Array{T},dYin::Array{T},theta::Array{T
     dth1,dth2,dth3,dth4 = splitWeights(this,dtheta)
 
 	# re-compute derivative of activation
-	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
-    Yout .+= this.Bin * th2
-	A,dA   = this.activation(Yout,true)
+	dA                = copy(tmp);
+    dA,dummy,tmpNL  = apply(this.nLayer,th4,dA)
+    dA .+= this.Bin * th2
+	map!(this.dactivation,dA,dA)
  
     dY = reshape(dYin,:,nex);
     Kop = getOp(this.K,th1)
@@ -137,10 +138,10 @@ function JTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T}
     Kop = getOp(this.K,th1)
 	
 	# re-compute derivative of activation
-	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
-    Yout .+= this.Bin * th2
-	A,dA   = this.activation(Yout,true)
+	dA                = copy(tmp);
+    dA,dummy,tmpNL  = apply(this.nLayer,th4,dA)
+    dA .+= this.Bin * th2
+	map!(this.dactivation,dA,dA)
  
 
     dth3      = vec(sum(this.Bout'*Z,2))
@@ -162,10 +163,10 @@ function JthetaTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Arr
     th1,th2,th3,th4  = splitWeights(this,theta)
 
 	# re-compute derivative of activation
-	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
-    Yout .+= this.Bin * th2
-	A,dA   = this.activation(Yout,true)
+	dA                = copy(tmp);
+    dA,dummy,tmpNL  = apply(this.nLayer,th4,dA)
+    dA .+= this.Bin * th2
+	map!(this.dactivation,dA,dA)
  
 
     Z         = reshape(Zin,:,nex);
@@ -183,10 +184,10 @@ function JYTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T
     th1,th2,th3,th4 = splitWeights(this,theta)
     
 	# re-compute derivative of activation
-	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
-    Yout .+= this.Bin * th2
-	A,dA   = this.activation(Yout,true)
+	dA                = copy(tmp);
+    dA,dummy,tmpNL  = apply(this.nLayer,th4,dA)
+    dA .+= this.Bin * th2
+	map!(this.dactivation,dA,dA)
  
 	Kop = getOp(this.K,th1)
     Z    = reshape(Zin,:,nex)
