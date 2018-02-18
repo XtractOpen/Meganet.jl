@@ -34,7 +34,7 @@ function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},doDerivative=f
 
     Yout::Array{T,2}     =  getOp(this.K,th1)*Y 
     tmp    = copy(Yout)
-    Yout,  = apply(this.nLayer,th4,Yout,doDerivative)
+    Yout,  = apply(this.nLayer,th4,Yout,false)
     Yout .+= this.Bin * th2
 	Yout,   = this.activation(Yout,false)
     Yout .+= this.Bout*th3
