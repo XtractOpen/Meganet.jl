@@ -49,7 +49,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
     println("Using $(nw) workers...")
 
     while epoch <= this.maxEpochs
-
+        tic()
         # Train on all workers
         @sync for pid in Yd.pids
             @async @fetchfrom pid train(this, objFun, xc, Yd, Cd, beta1, beta2)
@@ -83,7 +83,8 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
         end
 
         xOld   = copy(xc);
-        epoch += 1;
+        epoch += 1
+        toc()
     end
 
     return xc
