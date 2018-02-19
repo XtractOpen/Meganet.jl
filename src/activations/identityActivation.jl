@@ -17,13 +17,15 @@ export identityActivation
   A  - activation
   dA - derivatives
 """
-function identityActivation(Y::Array{T},doDerivative::Bool=false) where {T}
+function identityActivation(Y::Array{T},dA,doDerivative::Bool=false) where {T}
 
 if doDerivative
-    dA = ones(T,Y);
-else
-    dA = zeros(T,0)
+    if isempty(dA)
+        dA = ones(T,Y);
+    else
+        dA .= ones(T,Y);
+    end
 end
 
-return A,dA
+return A,dA #Depricated? A Isnt even declared lol
 end
