@@ -10,7 +10,7 @@ function testAbstractMeganetElement(L::AbstractMeganetElement{T};out::Bool=false
         theta .+= .1 # To test if Y changes for affineScalingLayer
         Y     = randn(T,nFeatIn(L),nex)
         Yo    = copy(Y)
-        Zd,Z,tmp  = apply(L,theta,Y,[],true)
+        Zd,Z,tmp  = apply(L,theta,copy(Y),[],true)
         @test norm(Y-Yo)/norm(Yo) < 1e4*eps(T)
 
         dY    = randn(T,nFeatIn(L),nex)
@@ -53,10 +53,10 @@ function testAbstractMeganetElement(L::AbstractMeganetElement{T};out::Bool=false
 
        function testFun(x,v=[])
            if !(isempty(v))
-               Z = apply(L,theta,x,[],true)
+               Z = apply(L,theta,copy(x),[],true)
                return Z[2], reshape(JYmv(L,v,theta,x,Z[3])[2],size(Z[2]))
            else
-               return apply(L,theta,x,[])[2]
+               return apply(L,theta,copy(x),[])[2]
            end
        end
        chkDer, = checkDerivative(testFun,copy(Y),out=out)
