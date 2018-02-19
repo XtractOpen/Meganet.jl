@@ -10,7 +10,7 @@ function testAbstractMeganetElement(L::AbstractMeganetElement{T};out::Bool=false
         theta .+= .1 # To test if Y changes for affineScalingLayer
         Y     = randn(T,nFeatIn(L),nex)
         Yo    = copy(Y)
-        Zd,Z,tmp  = apply(L,theta,Y,true)
+        Zd,Z,tmp  = apply(L,theta,Y,[],true)
         @test norm(Y-Yo)/norm(Yo) < 1e4*eps(T)
 
         dY    = randn(T,nFeatIn(L),nex)
@@ -42,7 +42,7 @@ function testAbstractMeganetElement(L::AbstractMeganetElement{T};out::Bool=false
     @testset "apply without derivatives" begin
         theta = initTheta(L)
         Y     = randn(T,nFeatIn(L),nex)
-        Z     = apply(L,theta,Y,false)
+        Z     = apply(L,theta,Y,[],false)
     end
 
 
@@ -53,10 +53,10 @@ function testAbstractMeganetElement(L::AbstractMeganetElement{T};out::Bool=false
 
        function testFun(x,v=[])
            if !(isempty(v))
-               Z = apply(L,theta,x,true)
+               Z = apply(L,theta,x,[],true)
                return Z[2], reshape(JYmv(L,v,theta,x,Z[3])[2],size(Z[2]))
            else
-               return apply(L,theta,x)[2]
+               return apply(L,theta,x,[])[2]
            end
        end
        chkDer, = checkDerivative(testFun,copy(Y),out=out)
@@ -69,7 +69,7 @@ function testAbstractMeganetElement(L::AbstractMeganetElement{T};out::Bool=false
        dY    = randn(T,nFeatIn(L),nex)
        Z     = randn(T,nFeatOut(L),nex)
 
-       tmp = apply(L,theta,Y,true)
+       tmp = apply(L,theta,copy(Y),[],true)
        Z1 =  JYmv(L,copy(dY),theta,copy(Y),tmp[3])[2]
        Z2 =  JYTmv(L,copy(Z),(T)[],theta,copy(Y),tmp[3])
 
@@ -86,10 +86,10 @@ function testAbstractMeganetElement(L::AbstractMeganetElement{T};out::Bool=false
 
           function testFunTh(x,v=[])
               if !(isempty(v))
-                  Z = apply(L,x,copy(Y),true)
+                  Z = apply(L,x,copy(Y),[],true)
                   return Z[2], reshape(Jthetamv(L,v,x,copy(Y),Z[3])[2],size(Z[2]))
               else
-                  return apply(L,x,copy(Y))[2]
+                  return apply(L,x,copy(Y),[])[2]
               end
           end
           chkDer, = checkDerivative(testFunTh,copy(theta),out=out)
@@ -102,7 +102,7 @@ function testAbstractMeganetElement(L::AbstractMeganetElement{T};out::Bool=false
           dtheta    = randn(T,nTheta(L))
           Z     = randn(T,nFeatOut(L),nex)
 
-          tmp = apply(L,theta,copy(Y),true)
+          tmp = apply(L,theta,copy(Y),[],true)
           Z1 =  Jthetamv(L,copy(dtheta),copy(theta),copy(Y),copy(tmp[3]))[2]
           Z2 =  JthetaTmv(L,copy(Z),(T)[],theta,copy(Y),tmp[3])
 

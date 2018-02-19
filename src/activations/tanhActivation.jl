@@ -27,7 +27,7 @@ function tanhActivation(Y::Array{T,2},doDerivative::Bool=false) where {T <: Numb
     return A, dA
 end
 
-function tanhActivation!(A::Array{T,2},dA,doDerivative::Bool=false) where {T <: Number}
+function tanhActivation!(A::Array{T,2},dA=[],doDerivative::Bool=false) where {T <: Number}
 
     A .= tanh.(A)
     if doDerivative

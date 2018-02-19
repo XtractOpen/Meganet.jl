@@ -17,12 +17,12 @@ mutable struct dnnObjFctn
 
 splitWeights(this::dnnObjFctn,x) = (return x[1:nTheta(this.net)], x[nTheta(this.net)+1:end])
 
-function getMisfit(this::dnnObjFctn,thetaW::Vector{T},Y::Array{T},C::Array{T},tmp::Array{Any},doDerivative=true) where {T<:Number}
+function getMisfit(this::dnnObjFctn,thetaW::Vector{T},Y::Array{T},C::Array{T},tmp::Array,doDerivative=true) where {T<:Number}
     theta,W = splitWeights(this,thetaW)
     return getMisfit(this,theta,W,Y,C,tmp,doDerivative)
 end
 
-function getMisfit(this::dnnObjFctn,theta::Array{T},W::Array{T},Y::Array{T},C::Array{T},tmp::Array{Any},doDerivative=true) where {T<:Number}
+function getMisfit(this::dnnObjFctn,theta::Array{T},W::Array{T},Y::Array{T},C::Array{T},tmp::Array,doDerivative=true) where {T<:Number}
 
     YN,dummy,tmp = apply(this.net,theta,Y,tmp,doDerivative)
 
@@ -32,12 +32,14 @@ function getMisfit(this::dnnObjFctn,theta::Array{T},W::Array{T},Y::Array{T},C::A
     Fc,hisF,dWF,d2WF,dYF,d2YF = getMisfit(this.pLoss,W,YN,C,doDerivative,doDerivative)
 
     if doDerivative
-		 dYF = JthetaTmv(this.net,dYF,zeros(T,0),theta,Y,tmp)
+        # tic()
+        dYF = JthetaTmv(this.net,dYF,zeros(T,0),theta,Y,tmp)
+        # toc()
     end
     return Fc,hisF,vec(dYF),vec(dWF),tmp
 end
 
-function evalObjFctn(this::dnnObjFctn,thetaW::Array{T},Y::Array{T},C::Array{T},tmp::Array{Any},doDerivative=true) where {T<:Number}
+function evalObjFctn(this::dnnObjFctn,thetaW::Array{T},Y::Array{T},C::Array{T},tmp::Array,doDerivative=true) where {T<:Number}
     theta,W = splitWeights(this,thetaW)
 
     # compute misfit
