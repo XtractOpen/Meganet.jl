@@ -26,15 +26,10 @@ function getMisfit(this::dnnObjFctn,theta::Array{T},W::Array{T},Y::Array{T},C::A
 
     YN,dummy,tmp = apply(this.net,theta,Y,tmp,doDerivative)
 
-    # println(eltype(tmp[1,2][1][1,1]))
-    # println(size(tmp))
-    # error("check tmp out")
     Fc,hisF,dWF,d2WF,dYF,d2YF = getMisfit(this.pLoss,W,YN,C,doDerivative,doDerivative)
 
     if doDerivative
-        # tic()
         dYF = JthetaTmv(this.net,dYF,zeros(T,0),theta,Y,tmp)
-        # toc()
     end
     return Fc,hisF,vec(dYF),vec(dWF),tmp
 end
