@@ -29,7 +29,7 @@ function apply(this::Connector{T},theta::Array{T},Y0::Array{T},tmp,doDerivative=
         end
     end
 
-    Y = this.K*Y0 .+ this.b # TODO: Should be able to do this in place
+    Y = this.K*Y0 .+ this.b
     Ydata::Array{T,2} = Array{T, 2}(0, 0) # Temporary fix until we know what type Q is
     if this.outTimes==1
         Ydata = this.Q*Y

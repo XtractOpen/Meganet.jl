@@ -44,7 +44,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
 
     if this.out; display(this); end
 
-    # Declare tmp - We know nothing about its shape of datatypes
+    # Declare tmp - We know nothing about its shape or datatypes
     tmp = Array{Any}(0,0)
 
     while epoch <= this.maxEpochs

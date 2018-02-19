@@ -45,7 +45,7 @@ function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},dA,doDerivativ
     dA = Array{T,2}(0,0)
 
     # subtract mean across pixels
-    Y .-= mean(Y,this.doNorm) #TODO: Cant see a reason why this shouldnt be done in place?
+    Y .-= mean(Y,this.doNorm)
 
     # normalize
     S2 = sqrt.(mean(Y.^2,this.doNorm) + this.eps)

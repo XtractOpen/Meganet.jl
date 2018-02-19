@@ -33,7 +33,7 @@ function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},tmp,doDerivati
 
     if isempty(tmp)
         tmp = Array{Any}(2)
-        tmp[1] = Array{Any}(0,0)
+        tmp[1] = Array{Any}(0)
         tmp[2] = Array{Any}(0)
     end
     nex = div(length(Yin),nFeatIn(this))
