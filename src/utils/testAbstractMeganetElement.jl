@@ -10,8 +10,9 @@ function testAbstractMeganetElement(L::AbstractMeganetElement{T};out::Bool=false
         theta .+= .1 # To test if Y changes for affineScalingLayer
         Y     = randn(T,nFeatIn(L),nex)
         Yo    = copy(Y)
+        # THE FOLLOWING HACK (copy(Y)) EFFECTIVELY CANCELS THIS TEST...COMMENTING IT OUT
         Zd,Z,tmp  = apply(L,theta,copy(Y),[],true)
-        @test norm(Y-Yo)/norm(Yo) < 1e4*eps(T)
+#         @test norm(Y-Yo)/norm(Yo) < 1e4*eps(T)
 
         dY    = randn(T,nFeatIn(L),nex)
         Z1    =  JYmv(L,dY,theta,Y,tmp)[2]
