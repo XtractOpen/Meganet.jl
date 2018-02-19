@@ -84,7 +84,7 @@ function Jthetamv(this::singleLayer{T},dtheta::Array{T},theta::Array{T},Yin::Arr
 	
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
+    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
     
@@ -104,7 +104,7 @@ function JYmv(this::singleLayer{T},dYin::Array{T},theta::Array{T},Y::Array{T},tm
  
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
+    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
  
@@ -124,7 +124,7 @@ function Jmv(this::singleLayer{T},dtheta::Array{T},dYin::Array{T},theta::Array{T
 
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
+    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
  
@@ -150,7 +150,7 @@ function JTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T}
 	
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
+    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
  
@@ -175,7 +175,7 @@ function JthetaTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Arr
 
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
+    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
  
@@ -196,7 +196,7 @@ function JYTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T
     
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
-    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout)
+    Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
  
