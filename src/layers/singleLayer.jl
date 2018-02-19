@@ -1,16 +1,18 @@
 export singleLayer,getSingleLayer
 
 mutable struct singleLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNormNN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
-        activation :: Function # activation function
-        K          :: TK # transformation type
-        nLayer     :: TN # normalization layer
-        Bin        :: Array{T} # bias inside nonlinearity
-        Bout       :: Array{T} # bias outside nonlinearity
+        activation  :: Function # activation function
+        activation! :: Function # in place activation function
+        K           :: TK # transformation type
+        nLayer      :: TN # normalization layer
+        Bin         :: Array{T} # bias inside nonlinearity
+        Bout        :: Array{T} # bias outside nonlinearity
 
 end
 
-function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),activation=tanhActivation)
-	singleLayer(activation,K,nLayer,Bin,Bout);
+function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),
+                        activation=tanhActivation,activation_inplace=tanhActivation!)
+	singleLayer(activation,activation_inplace,K,nLayer,Bin,Bout);
 end
 
 
@@ -27,16 +29,26 @@ function splitWeights(this::singleLayer{T},theta::Array{T}) where {T <: Number}
     return th1, th2, th3, th4
 end
 
-function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},doDerivative=false) where {T <: Number}
+function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},tmp,doDerivative=false) where {T <: Number}
+
     nex = div(length(Yin),nFeatIn(this))
     Y   = reshape(Yin,:,nex)
     th1,th2,th3,th4 = splitWeights(this,theta)
 
     Yout::Array{T,2}     =  getOp(this.K,th1)*Y 
-    tmp    = copy(Yout)
-    Yout,  = apply(this.nLayer,th4,Yout,false)
+    if doDerivative
+      if isempty(tmp)
+        tmp = copy(Yout)
+      else
+        tmp .= Yout
+      end
+    end
+  
+    Yout,  = apply(this.nLayer,th4,Yout,[],false) #TODO passing empty array is a bit hacky
     Yout .+= this.Bin * th2
-	Yout,   = this.activation(Yout,false)
+
+    Yout,  = this.activation!(Yout,[],false)
+
     Yout .+= this.Bout*th3
     Ydata  = Yout
     return Ydata, Yout, tmp
@@ -59,7 +71,7 @@ function nDataOut(this::singleLayer)
 end
 
 function initTheta(this::singleLayer{T}) where {T <: Number}
-    return [vec(initTheta(this.K)); convert(T,0.1)*ones(T,size(this.Bin,2),1) ; convert(T,0.1)*ones(T,size(this.Bout,2),1); initTheta(this.nLayer) ]
+    return [vec(initTheta(this.K)); convert(T,0.01)*ones(T,size(this.Bin,2),1) ; convert(T,0.01)*ones(T,size(this.Bout,2),1); initTheta(this.nLayer) ]
 end
 
 

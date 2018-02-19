@@ -1,4 +1,4 @@
-export reluActivation
+export reluActivation, reluActivation!
 
 """
  relu activation A = relu(Y)
@@ -19,13 +19,27 @@ export reluActivation
 """
 function reluActivation(Y::Array{T},doDerivative::Bool=false) where {T}
 
-Y = max.(Y,0);
+    A = max.(Y,zero(T));
 
-if doDerivative
-    dA = sign(Y);
-else
-    dA = zeros(T,0)
+    if doDerivative
+        dA = sign.(A);
+    else
+        dA = zeros(T,0)
+    end
+
+    return A,dA
 end
 
-return A,dA
+
+
+function reluActivation!(A::Array{T},dA,doDerivative::Bool=false) where {T}
+    A .= max.(A,zero(T));   
+    if doDerivative
+        if isempty(dA)
+            dA = sign.(A);
+        else
+            dA .= sign.(A);
+        end
+    end
+    return A,dA
 end

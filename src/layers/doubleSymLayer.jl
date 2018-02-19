@@ -7,6 +7,7 @@ export DoubleSymLayer,getDoubleSymLayer
 """
 mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNormNN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
     activation  :: Function   # activation function
+    activation! :: Function # in place activation function
     K           :: TK   # Kernel model, e.g., convMod
     nLayer      :: TN   # normalization layer
     Bin         :: Array{T}   # Bias inside the nonlinearity
@@ -14,12 +15,12 @@ mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchN
 end
 
 
-function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T},
+function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T};
                            Bin=zeros(nFeatOut(K),0),Bout=zeros(nFeatIn(K),0),
-                           activation=tanhActivation) where {T <: Number}
+                           activation=tanhActivation,activation_inplace=tanhActivation!) where {T <: Number}
     BinT = convert.(T, Bin)
     BoutT = convert.(T, Bout)
-    return DoubleSymLayer(activation,K,nLayer,BinT,BoutT);
+    return DoubleSymLayer(activation,activation_inplace,K,nLayer,BinT,BoutT);
 
 end
 
@@ -37,7 +38,8 @@ function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T<:Number}
     return th1, th2, th3, th4
 end
 
-function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=true) where {T<:Number}
+
+function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},tmp,doDerivative=true) where {T<:Number}
 
     nex = div(length(Yin),nFeatIn(this))::Int
     Y   = reshape(Yin,:,nex)
@@ -45,12 +47,21 @@ function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},doDerivat
     theta1,theta2,theta3,theta4 = splitWeights(this,theta)
     Kop    = getOp(this.K,theta1)
     KY     = Kop*Y
-	tmp    = (doDerivative) ? copy(KY) : (T)[]
-    KY,    = apply(this.nLayer,theta4,KY,false)
+    if doDerivative
+        if isempty(tmp)
+            tmp = copy(KY)
+        else
+            tmp .= KY
+        end
+    end
+    KY, = apply(this.nLayer,theta4,KY,[],false)
+
     if !isempty(theta2)
      KY .+= this.Bin*theta2
     end
-    Z::Array{T,2},      = this.activation(KY,false)
+      
+    Z::Array{T,2},      = this.activation!(KY,[],false)
+
     Z      = -(Kop'*Z)
     if !isempty(theta3)
         Z  .+= this.Bout*theta3
@@ -76,8 +87,8 @@ end
 
 function initTheta(this::DoubleSymLayer{T})  where {T<:Number}
     theta = [vec(initTheta(this.K));
-    T(0.1)*ones(T,size(this.Bin,2),1);
-    T(0.1)*ones(T,size(this.Bout,2),1);
+    T(0.01)*ones(T,size(this.Bin,2),1);
+    T(0.01)*ones(T,size(this.Bout,2),1);
     initTheta(this.nLayer)];
     return theta
 end
