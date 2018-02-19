@@ -75,13 +75,13 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
         end
         # we sample 2^12 images from the training set for displaying the objective.
         idt     = ids[1:min(nex,2^12)]
-        # Jc,para   = evalObjFctn(objFun,xc,Y[:,idt],C[:,idt],tmp); #TODO: Do we really wanna do this??
+        Jtrain,ptrain   = getMisfit(objFun,xc,Y[:,idt],C[:,idt],tmp,false);
         Jval,pVal = getMisfit(objFun,xc,Yv,Cv,tmp,false);
 
-        # if this.out;
-        #     @printf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jc 100*(1-para[3]/para[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])
-        # end
-        println("Val accuracy: ", 100*(1-pVal[3]/pVal[2]))
+        if this.out;
+            @printf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jtrain 100*(1-ptrain[3]/ptrain[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])
+        end
+
         xOld       = copy(xc);
         epoch = epoch + 1;
     end
