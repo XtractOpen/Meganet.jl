@@ -7,6 +7,7 @@ export DoubleSymLayer,getDoubleSymLayer
 """
 mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNormNN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
     activation  :: Function   # activation function
+    activation! :: Function # in place activation function
     K           :: TK   # Kernel model, e.g., convMod
     nLayer      :: TN   # normalization layer
     Bin         :: Array{T}   # Bias inside the nonlinearity
@@ -16,10 +17,10 @@ end
 
 function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T};
                            Bin=zeros(nFeatOut(K),0),Bout=zeros(nFeatIn(K),0),
-                           activation=tanhActivation!) where {T <: Number}
+                           activation=tanhActivation,activation_inplace=tanhActivation!) where {T <: Number}
     BinT = convert.(T, Bin)
     BoutT = convert.(T, Bout)
-    return DoubleSymLayer(activation,K,nLayer,BinT,BoutT);
+    return DoubleSymLayer(activation,activation_inplace,K,nLayer,BinT,BoutT);
 
 end
 
@@ -40,8 +41,8 @@ end
 function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},tmp,doDerivative=true) where {T<:Number}
     if isempty(tmp)
         tmp = Array{Any}(2)
-        tmp[1] = Array{Any}(0,0)
-        tmp[2] = Array{Any}(0,0)
+        tmp[1] = Array{Any}(0)
+        tmp[2] = Array{Any}(0)
     end
     #QZ = []
     nex = div(length(Yin),nFeatIn(this))::Int
@@ -66,7 +67,7 @@ function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},tmp,doDer
         end
     end
 
-    Z::Array{T,2},      = this.activation(Yt,[],false) #We don't want to do derivatives here?
+    Z::Array{T,2},      = this.activation!(Yt,[],false) #We don't want to do derivatives here?
     Z      = -(Kop'*Z)
     if !isempty(theta3)
         Z  .+= this.Bout*theta3
@@ -100,7 +101,7 @@ end
 
 function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
 
-    A,dA = this.activation(tmp[2],[],true)
+    A,dA = this.activation(tmp[2],true)
     th1, th2,th3,th4    = splitWeights(this,theta)
     dth1,dth2,dth3,dth4 = splitWeights(this,dtheta)
 
@@ -116,8 +117,8 @@ function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Ar
 end
 
 function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
-
-    dA = this.activation(tmp[2],[],true)[2]
+    #TODO: Look into why this activation cannot be done in place (tests fail)
+    dA = this.activation(tmp[2],true)[2]
 
     nex = div(length(dY),nFeatIn(this))
     dY  = reshape(dY,:,nex)
@@ -132,7 +133,7 @@ function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},t
 end
 
 function Jmv(this::DoubleSymLayer{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
-    A,dA = this.activation(copy(tmp[2]),[],true)
+    A,dA = this.activation(copy(tmp[2]),true)
     nex = div(length(Y),nFeatIn(this))
 
     th1, th2,th3,th4    = splitWeights(this,theta)
@@ -169,7 +170,7 @@ function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Ar
     Z         = reshape(Z,:,nex)
     th1,th2,th3,th4  = splitWeights(this,theta)
     Kop       = getOp(this.K,th1)
-    A,dA      = this.activation(tmp[2],[],true)
+    A,dA      = this.activation(tmp[2],true)
 
     dth3      = vec(sum(this.Bout'*Z,2))
     dAZ       = dA.*(Kop*Z)
@@ -189,7 +190,7 @@ function JYTmv(this::DoubleSymLayer{T},Zin::Array{T},dummy::Array{T},theta::Arra
     Z         = reshape(Zin,:,nex)
     th1,th2,th3,th4  = splitWeights(this,theta)
     Kop       = getOp(this.K,th1)
-    A,dA      = this.activation(tmp[2],[],true)
+    A,dA      = this.activation(tmp[2],true)
 
     dAZ       = dA.*(Kop*Z)
     dAZ       = JYTmv(this.nLayer,dAZ,(T)[],th4,Kop*Y,tmp[1])
@@ -207,7 +208,7 @@ function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
     Y         = reshape(Yin,:,nex)
     th1, th2, th3, th4  = splitWeights(this,theta)
     #Kop       = getOp(this.K,th1)
-    A::Array{T,2}, dA::Array{T,2}    = this.activation(Yt,[],true)
+    A::Array{T,2}, dA::Array{T,2}    = this.activation(Yt,true)
 
     dth3      = vec(sum(this.Bout'*Z,2))
 

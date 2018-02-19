@@ -1,16 +1,18 @@
 export singleLayer,getSingleLayer
 
 mutable struct singleLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNormNN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
-        activation :: Function # activation function
-        K          :: TK # transformation type
-        nLayer     :: TN # normalization layer
-        Bin        :: Array{T} # bias inside nonlinearity
-        Bout       :: Array{T} # bias outside nonlinearity
+        activation  :: Function # activation function
+        activation! :: Function # in place activation function
+        K           :: TK # transformation type
+        nLayer      :: TN # normalization layer
+        Bin         :: Array{T} # bias inside nonlinearity
+        Bout        :: Array{T} # bias outside nonlinearity
 
 end
 
-function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),activation=tanhActivation!)
-	singleLayer(activation,K,nLayer,Bin,Bout);
+function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),
+                        activation=tanhActivation,activation_inplace=tanhActivation!)
+	singleLayer(activation,activation_inplace,K,nLayer,Bin,Bout);
 end
 
 
@@ -42,7 +44,7 @@ function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},tmp,doDerivati
     Yout .+= this.Bin * th2
     Yout,dummy,tmp[1] = apply(this.nLayer,th4,Yout,tmp[1],doDerivative)
 
-    Yout,tmp[2]  = this.activation(Yout,tmp[2],doDerivative)
+    Yout,tmp[2]  = this.activation!(Yout,tmp[2],doDerivative)
 
     Yout .+= this.Bout*th3
     Ydata = Yout
