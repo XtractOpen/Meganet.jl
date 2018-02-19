@@ -17,11 +17,13 @@ include("kernelTypes/sparseKernel.jl")
 include("kernelTypes/convFFTKernel.jl");
 include("kernelTypes/convGEMMKernel.jl");
 include("kernelTypes/convCircKernel.jl");
+# include("kernelTypes/convDiagKernel.jl");
 
 
 
 include("layers/affineScalingLayer.jl")
 include("layers/normLayer.jl")
+include("integrators/batchNormNN.jl")
 include("layers/doubleSymLayer.jl")
 include("layers/singleLayer.jl")
 

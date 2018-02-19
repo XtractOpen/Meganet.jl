@@ -31,7 +31,7 @@ objFun = dnnObjFctn(net,pLoss,pRegTh,pRegW)
 
 @testset "dThLoss $TYPE" begin
 function testdThLoss(x,v=nothing)
-        F,his,dF, = getMisfit(objFun,x,W,Y,C,true)
+        F,his,dF, = getMisfit(objFun,x,W,Y,C,[],true)
         if v!==nothing
             return F,dot(dF,v)
         else
@@ -44,7 +44,7 @@ end
 
 @testset "dWLoss $TYPE" begin
 function testdWLoss(x,v=nothing)
-        F,his,dFth,dF = getMisfit(objFun,theta,x,Y,C,true)
+        F,his,dFth,dF = getMisfit(objFun,theta,x,Y,C,[],true)
         if v!==nothing
             return F,dot(dF,v)
         else
@@ -57,7 +57,7 @@ end
 
 @testset "dJ $TYPE" begin
 function testdJ(x,v=nothing)
-        F,his,dF = evalObjFctn(objFun,x,Y,C,true)
+        F,his,dF = evalObjFctn(objFun,x,Y,C,[],true)
         if v!==nothing
             return F,dot(dF,v)
         else

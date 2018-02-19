@@ -5,20 +5,20 @@ Residual Neural Network block
 
 Y_k+1 = Y_k + h*layer{k}(theta{k},Y_k)
 """
-mutable struct ResNN{T} <: AbstractMeganetElement{T}
-    layer
-    nt
-    h
-    outTimes
+mutable struct ResNN{T, TL <: AbstractMeganetElement{T}} <: AbstractMeganetElement{T} #TODO limit TL more
+    layer    :: TL
+    nt       :: Int
+    h        :: T
+    outTimes :: Array{Int,1}
     Q
 end
 
 function getResNN(TYPE::Type,layer,nt,h=one(TYPE),outTimes=eye(Int,nt)[:,nt],Q=I)
-	h = convert(TYPE,h);
+    h = convert(TYPE,h);
 	if nFeatIn(layer)!=nFeatOut(layer)
             error("ResNN layer must be square!")
-       end
-    return ResNN{TYPE}(layer,nt,h,outTimes,Q)
+    end
+    return ResNN(layer,nt,h,outTimes,Q)
 end
 
 
@@ -48,27 +48,46 @@ function initTheta(this::ResNN{T}) where {T<:Number}
 end
 
 # ------- apply forward problems -----------
-function  apply(this::ResNN{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T<:Number}
+function  apply(this::ResNN{T},theta_in::Array{T},Y0::Array{T},tmp,doDerivative=true) where {T<:Number}
+    if isempty(tmp)
+        tmp = Array{Any}(this.nt+1,2)
+    end
+
+    if doDerivative
+        if isassigned(tmp,1,1)
+            tmp11 = tmp[1,1]
+            tmp11 .= Y0
+        else
+            tmp[1,1] = copy(Y0)
+        end
+    end
 
     nex = div(length(Y0),nFeatIn(this))
     Y   = reshape(Y0,:,nex)
-    tmp = Array{Any}(this.nt+1,2)
-    if doDerivative
-        tmp[1,1] = Y0
-    end
 
-    theta = reshape(theta,:,this.nt)
 
-    Ydata = zeros(T,0,nex)
+    theta = reshape(theta_in,:,this.nt)
+
+    Ydata::Array{T,2} = zeros(T,0,nex)
     for i=1:this.nt
-        Z,dummy,tmp[i,2] = apply(this.layer,theta[:,i],Y,doDerivative)
-        Y +=  this.h * Z
-        if doDerivative
-            tmp[i+1,1] = Y
+        if !isassigned(tmp,i,2)
+            tmp[i,2] = Array{Any}(0)
         end
+        Z,dummy,tmp[i,2] = apply(this.layer,theta[:,i],Y,tmp[i,2],doDerivative)
+        Y +=  this.h * Z
         if this.outTimes[i]==1
             Ydata = [Ydata;this.Q*Y]
         end
+
+        if doDerivative
+            if isassigned(tmp,i+1,1)
+                tmp1 = tmp[i+1,1]
+                tmp1 .= Y
+            else
+                tmp[i+1,1] = copy(Y)
+            end
+        end
+
     end
     return Ydata,Y,tmp
 end
@@ -115,26 +134,26 @@ end
 
 # -------- Jacobian transpose matvecs ----------------
 
-function JYTmv(this::ResNN{T},Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T<:Number}
+function JYTmv(this::ResNN{T},Wdata_in::Array{T},Win::Array{T},theta_in::Array{T},Y::Array{T},tmp) where {T<:Number}
 
     nex = div(length(Y),nFeatIn(this))
-    if length(Wdata)>0
-        Wdata = reshape(Wdata,:,sum(this.outTimes),nex)
+    if length(Wdata_in)>0
+        Wdata = reshape(Wdata_in,:,sum(this.outTimes),nex)
     end
-    if length(W)==0
-        W = zero(T)
+    if length(Win)==0
+        W = zeros(T,0,0)
     else
-        W     = reshape(W,:,nex)
+        W = reshape(Win,:,nex)
     end
-    theta  = reshape(theta,:,this.nt)
+    theta  = reshape(theta_in,:,this.nt)
 
     cnt = sum(this.outTimes)
     for i=this.nt:-1:1
         if  this.outTimes[i]==1
-            W += this.Q'*Wdata[:,cnt,:]
+            W::Array{T,2} = this.Q'*Wdata[:,cnt,:]
             cnt = cnt-1
         end
-        dW = JYTmv(this.layer,W,zeros(T,0),theta[:,i],tmp[i,1],tmp[i,2])
+        dW::Array{T,2} = JYTmv(this.layer,W,zeros(T,0),theta[:,i],tmp[i,1],tmp[i,2])
         W  += this.h*dW
     end
     return W

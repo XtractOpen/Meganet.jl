@@ -12,47 +12,50 @@ function getNormLayer(TYPE::Type, nData,doNorm,eps = convert(TYPE,1e-3))
 end
 
 function getBatchNormLayer(TYPE::Type, nData; eps = convert(TYPE,1e-3),isTrainable::Bool=true)
+
     L =  normLayer{TYPE}(nData,3,eps)
     if isTrainable
-        SL = AffineScalingLayer{TYPE}(nData)
-        return getNN([L;SL]);
+        SL = AffineScalingLayer{TYPE}(nData)        
+        temp_var = getbatchNormNN((L,SL))
+        return temp_var
     else
-        return L;
+        temp_var = L
+        return temp_var
     end
+
 end
 
 function getTVNormLayer(TYPE::Type,nData;eps = convert(TYPE,1e-3),isTrainable::Bool=true)
     L =  normLayer{TYPE}(nData,2,eps)
     if isTrainable
         SL = AffineScalingLayer{TYPE}(nData)
-        return getNN([L;SL])
+        return getbatchNormNN((L,SL))
     else
         return L
     end
 end
 
-function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=true) where {T <: Number}
+function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},dA,doDerivative=true) where {T <: Number}
 
      # first organize Y with channels
     nf  = this.nData[2]::Int
     nex = div(length(Yin),nFeatIn(this))::Int
     Y = reshape(Yin,:,nf,nex)
 
-    dA = (T)[]
+    dA = Array{T,2}(0,0)
 
     # subtract mean across pixels
     m = mean(Y, this.doNorm)
-    Yout = Y .- m
+    Y .-= m
 
     # normalize
     ep = this.eps
-    mean!(x -> x^2, m, Yout)
+    mean!(x -> x^2, m, Y)
     m .= sqrt.(m .+ ep)
-    Yout .= Yout ./ m
+    Y .= Y ./ m
 
-    Yout2 = reshape(Yout,:,nex)
-
-    return Yout2, Yout2, dA
+    Yout = reshape(Y,:,nex)
+    return Yout, Yout, dA
 end
 
 function nTheta(this::normLayer)
