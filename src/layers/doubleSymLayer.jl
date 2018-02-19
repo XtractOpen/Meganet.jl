@@ -100,7 +100,7 @@ function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Ar
 
 	# re-compute derivative of activation
 	KY              = copy(tmp);
-    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,true)
+    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,[],true)
     if !isempty(th2)
      KY .+= this.Bin*th2
     end
@@ -131,7 +131,7 @@ function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},t
 
 	# re-compute derivative of activation
 	KY              = copy(tmp);
-    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,true)
+    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,[],true)
     if !isempty(th2)
      KY .+= this.Bin*th2
     end
@@ -153,7 +153,7 @@ function Jmv(this::DoubleSymLayer{T},dtheta::Array{T},dY::Array{T},theta::Array{
 
 	# re-compute derivative of activation
 	KY              = copy(tmp);
-    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,true)
+    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,[],true)
     if !isempty(th2)
      KY .+= this.Bin*th2
     end
@@ -193,7 +193,7 @@ function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Ar
     
 	# re-compute derivative of activation
 	KY              = copy(tmp);
-    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,true)
+    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,[],true)
     if !isempty(th2)
      KY .+= this.Bin*th2
     end
@@ -220,7 +220,7 @@ function JYTmv(this::DoubleSymLayer{T},Zin::Array{T},dummy::Array{T},theta::Arra
     
 	# re-compute derivative of activation
 	KY              = copy(tmp);
-    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,true)
+    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,[],true)
     if !isempty(th2)
      KY .+= this.Bin*th2
     end
@@ -246,7 +246,7 @@ function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
 	
 	# re-compute derivative of activation
 	KY              = copy(tmp);
-    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,true)
+    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,[],true)
     if !isempty(th2)
      KY .+= this.Bin*th2
     end
