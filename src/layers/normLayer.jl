@@ -37,7 +37,7 @@ end
 
 function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},dA,doDerivative=true) where {T <: Number}
 
-    # first organize Y with channels
+     # first organize Y with channels
     nf  = this.nData[2]::Int
     nex = div(length(Yin),nFeatIn(this))::Int
     Y = reshape(Yin,:,nf,nex)
@@ -45,11 +45,14 @@ function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},dA,doDerivativ
     dA = Array{T,2}(0,0)
 
     # subtract mean across pixels
-    Y .-= mean(Y,this.doNorm)
+    m = mean(Y, this.doNorm)
+    Y .-= m
 
     # normalize
-    S2 = sqrt.(mean(Y.^2,this.doNorm) + this.eps)
-    Y ./= S2
+    ep = this.eps
+    mean!(x -> x^2, m, Y)
+    m .= sqrt.(m .+ ep)
+    Y .= Y ./ m
 
     Yout = reshape(Y,:,nex)
     return Yout, Yout, dA

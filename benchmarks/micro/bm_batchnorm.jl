@@ -43,7 +43,8 @@ end
 
 function benchmarkApply(L, theta, Y, history)
     funcName = "apply"
-    Yout2,Yout2,tmp2 = apply(L,theta,Y,true)
+    Q = copy(Y)
+    Yout,Yout,tmp = apply(L,theta,Q,true)
 
     @code_warntype apply(L,theta,Y,true)
 
@@ -52,4 +53,6 @@ function benchmarkApply(L, theta, Y, history)
     Meganet.updatehistory!(history, trial, "hist")
     hist = JLD.load(history, "hist")
     judge(hist)
+
+    return trial
 end
