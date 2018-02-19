@@ -53,7 +53,7 @@ end
 
 
 # --------- forward problem ----------
-function apply(this::batchNormNN{T},theta::Array{T},Y::Array{T,2},tmp::Array{Any},doDerivative=true) where {T<:Number}
+function apply(this::batchNormNN{T},theta::Array{T},Y::Array{T,2},tmp::Array,doDerivative=true) where {T<:Number}
     nex = div(length(Y),nFeatIn(this))::Int
     nt = length(this.layers)
 
