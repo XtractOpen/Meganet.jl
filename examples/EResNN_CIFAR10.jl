@@ -14,7 +14,7 @@ miniBatchSize = 64;
 nImg = [32; 32]
 cin  = 3
 nc   = [16;32;64;64]
-nt   = 1*[1;1;1]
+nt   = 2*[1;1;1]
 h    = [1.;1.;1.]
 
 TYPE = Float32;
@@ -73,8 +73,7 @@ pRegTh = getTikhonovReg(TYPE;alpha=4e-4)
 pRegW = getTikhonovReg(TYPE;alpha=4e-4)
 pLoss = getSoftMaxLoss(TYPE);
 objFun = dnnObjFctn(net,pLoss,pRegTh,pRegW)
-#opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=20,miniBatch=miniBatchSize,out=true)
-opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=100,miniBatch=miniBatchSize,out=true)
+opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=1,miniBatch=miniBatchSize,out=true, nesterov=true)
 
 W      = 0.1*vec(randn(TYPE,10,nFeatOut(net)+1));
 W = min.(W,.2);

@@ -1,16 +1,18 @@
 export singleLayer,getSingleLayer
 
 mutable struct singleLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNormNN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
-        activation :: Function # activation function
-        K          :: TK # transformation type
-        nLayer     :: TN # normalization layer
-        Bin        :: Array{T} # bias inside nonlinearity
-        Bout       :: Array{T} # bias outside nonlinearity
+        activation  :: Function # activation function
+        activation! :: Function # in place activation function
+        K           :: TK # transformation type
+        nLayer      :: TN # normalization layer
+        Bin         :: Array{T} # bias inside nonlinearity
+        Bout        :: Array{T} # bias outside nonlinearity
 
 end
 
-function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),activation=tanhActivation)
-	singleLayer(activation,K,nLayer,Bin,Bout);
+function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),
+                        activation=tanhActivation,activation_inplace=tanhActivation!)
+	singleLayer(activation,activation_inplace,K,nLayer,Bin,Bout);
 end
 
 
@@ -27,16 +29,23 @@ function splitWeights(this::singleLayer{T},theta::Array{T}) where {T <: Number}
     return th1, th2, th3, th4
 end
 
-function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},doDerivative=false) where {T <: Number}
-    tmp = Array{Any}(2)
+function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},tmp,doDerivative=false) where {T <: Number}
+
+    if isempty(tmp)
+        tmp = Array{Any}(2)
+        tmp[1] = Array{Any}(0)
+        tmp[2] = Array{Any}(0)
+    end
     nex = div(length(Yin),nFeatIn(this))
     Y   = reshape(Yin,:,nex)
     th1,th2,th3,th4 = splitWeights(this,theta)
 
     Yout::Array{T,2}     =  getOp(this.K,th1)*Y 
     Yout .+= this.Bin * th2
-    Yout,dummy,tmp[1] = apply(this.nLayer,th4,Yout,doDerivative)
-    Yout,tmp[2]  = this.activation(Yout,doDerivative)
+    Yout,dummy,tmp[1] = apply(this.nLayer,th4,Yout,tmp[1],doDerivative)
+
+    Yout,tmp[2]  = this.activation!(Yout,tmp[2],doDerivative)
+
     Yout .+= this.Bout*th3
     Ydata = Yout
     return Ydata, Yout, tmp
