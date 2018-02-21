@@ -1,7 +1,7 @@
 using MAT, Meganet
 BLAS.set_num_threads(1)
 
-n = 10000
+n = 512
 Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/");
 
 # using PyPlot

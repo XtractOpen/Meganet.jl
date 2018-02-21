@@ -44,32 +44,35 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
 
     # Distribute the data
     nw = nworkers()
-    Yd = distribute(Y, dist = (1, nw))
-    Cd = distribute(C, dist = (1, nw))
+    Ys = SharedArray(Y)
+    Cs = SharedArray(C)
     println("Using $(nw) workers...")
 
     while epoch <= this.maxEpochs
         tic()
         # Train on all workers
-        @sync for pid in Yd.pids
-            @async @fetchfrom pid train(this, objFun, xc, Yd, Cd, beta1, beta2)
+        #@sync for pid in Ys.pids
+        #    @async @fetchfrom pid train(this, objFun, xc, Ys, Cs, beta1, beta2)
+        #end
+        for pid in Ys.pids
+            @fetchfrom pid train(this, objFun, xc, Ys, Cs, beta1, beta2)
         end
 
         # we sample 2^12 images from the training set for displaying the objective.
         xc = Meganet.XC
         nex = size(Y,2)
-        n_total = min(nex,2^10)
+        n_total = min(nex,60)
         n_worker = div(n_total, nw)
 
         JcA     = Array{T,1}(nw)
         hisFA    = Array{Array{T,1},1}(nw)
         Jval = zero(T)
         pVal = Array{T,1}()
-	tmp = Array{Any}(0,0)
+	    tmp = Array{Any}(0,0)
 
         @sync begin
-                for (i, pid) in enumerate(Yd.pids)
-                    @async JcA[i], hisFA[i] = @fetchfrom pid evalObjFctn_local(objFun, xc, Yd, Cd, n_worker)
+                for (i, pid) in enumerate(Ys.pids)
+                    @async JcA[i], hisFA[i] = @fetchfrom pid evalObjFctn_local(objFun, xc, Ys, Cs, n_worker)
                 end
 
                 # Currently validation data is on master so this is local
@@ -96,17 +99,14 @@ end
 
 Evaluate the objective function on `n` random examples from `Y`
 """
-function evalObjFctn_local(objFun::dnnObjFctn, xc::Array{T,1}, Y::DArray{T,2}, C::DArray{T,2}, n::Int) where {T<:Number}
+function evalObjFctn_local(objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{T,2}, C::SharedArray{T,2}, n::Int) where {T<:Number}
 
-    Y_local = localpart(Y)
-    C_local = localpart(C)
-
-    nex = size(Y_local,2)
+    nex = size(Y,2)
     ids = randperm(nex)
     idt = ids[1:min(n, nex)]
     tmp = Array{Any}(0,0)
 
-    Jc, hisF, dJ = evalObjFctn(objFun,xc,Y_local[:,idt], C_local[:,idt], tmp, false);
+    Jc, hisF, dJ = evalObjFctn(objFun,xc,Y[:,idt], C[:,idt], tmp, false);
 
     return Jc, hisF, dJ
 end
@@ -114,24 +114,24 @@ end
 """
 Train on the local part of the distributed data in Y
 """
-function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::DArray{T,2}, C::DArray{T,2}, beta1::T, beta2::T) where {T<:Number}
+function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{T,2}, C::SharedArray{T,2}, beta1::T, beta2::T) where {T<:Number}
 # TODO send the worker SGD and objFun onl once
 
-    Y_local = localpart(Y)
-    C_local = localpart(C)
-
-    nex = size(Y_local,2)
+    nex = size(Y,2)
+    nworkers = length(Y.pids)
     ids = randperm(nex)
-    lr = this.learningRate
+    lr = this.learningRate*nworkers
     dJ = zeros(T,size(xc))
     tmp = Array{Any}(0,0)
 
-    for k=1:ceil(Int64,nex/this.miniBatch)
+    batchsize = div(this.miniBatch, nworkers)
+
+    for k=1:ceil(Int64,nex/batchsize)
         idk = ids[(k-1)*this.miniBatch+1: min(k*this.miniBatch,nex)]
         if this.nesterov && !this.ADAM
-            Jk,dummy,dJk = evalObjFctn(objFun, xc-this.momentum*dJ, Y_local[:,idk], C_local[:,idk], tmp);
+            Jk,dummy,dJk = evalObjFctn(objFun, xc-this.momentum*dJ, Y[:,idk], C[:,idk], tmp);
         else
-            Jk,dummy,dJk = evalObjFctn(objFun, xc, Y_local[:,idk], C_local[:,idk], tmp);
+            Jk,dummy,dJk = evalObjFctn(objFun, xc, Y[:,idk], C[:,idk], tmp);
         end
 
         if this.ADAM
