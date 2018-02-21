@@ -94,7 +94,7 @@ end
 """
     balance(nex::Int, batchsize::Int, n::Int)
 
-Evenly distribute the elements of `nex` in increments of `batchsize` into `n`
+Returns evenly distributed indices for a vector with `nex` elements, in increments of `batchsize` into `n`
 chunks, ignoring the remainder.
 
 ### Example

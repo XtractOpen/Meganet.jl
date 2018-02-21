@@ -32,6 +32,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
 
     # evaluate training and validation
     epoch = 1
+    Jc_old = Inf
     xOld = copy(xc)
     dJ = zeros(T,size(xc))
     mJ = zeros(T,size(xc))
@@ -50,12 +51,19 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
 
     while epoch <= this.maxEpochs
         tic()
+
+        # Shuffle and balance
+        nex = size(Y,2)
+        ids = randperm(nex)
+        indices = balance(nex, this.miniBatch, nw)
+
         # Train on all workers
         #@sync for pid in Ys.pids
         #    @async @fetchfrom pid train(this, objFun, xc, Ys, Cs, beta1, beta2)
         #end
-        for pid in Ys.pids
-            @fetchfrom pid train(this, objFun, xc, Ys, Cs, beta1, beta2)
+
+        for (i, pid) in enumerate(Ys.pids)
+            @fetchfrom pid train(this, objFun, xc, Ys, Cs, beta1, beta2, ids[indices[i]])
         end
 
         # we sample 2^12 images from the training set for displaying the objective.
@@ -72,7 +80,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
 
         @sync begin
                 for (i, pid) in enumerate(Ys.pids)
-                    @async JcA[i], hisFA[i] = @fetchfrom pid evalObjFctn_local(objFun, xc, Ys, Cs, n_worker)
+                    @async JcA[i], hisFA[i] = @fetchfrom pid evalObjFctn_local(objFun, xc, Ys, Cs, n_worker, ids[indices[i]])
                 end
 
                 # Currently validation data is on master so this is local
@@ -83,7 +91,10 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
         hisF = sum(hisFA)
 
         if this.out;
-            @printf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jc 100*(1-hisF[3]/hisF[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])
+            s = @sprintf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jc 100*(1-hisF[3]/hisF[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])
+            Jc < Jc_old ? (color = :light_green) : (color = :light_red)
+            print_with_color(color, s)
+            Jc_old = Jc
         end
 
         xOld   = copy(xc);
@@ -99,10 +110,9 @@ end
 
 Evaluate the objective function on `n` random examples from `Y`
 """
-function evalObjFctn_local(objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{T,2}, C::SharedArray{T,2}, n::Int) where {T<:Number}
+function evalObjFctn_local(objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{T,2}, C::SharedArray{T,2}, n::Int, ids::Vector{<:Integer}) where {T<:Number}
 
-    nex = size(Y,2)
-    ids = randperm(nex)
+    nex = length(ids)
     idt = ids[1:min(n, nex)]
     tmp = Array{Any}(0,0)
 
@@ -114,12 +124,13 @@ end
 """
 Train on the local part of the distributed data in Y
 """
-function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{T,2}, C::SharedArray{T,2}, beta1::T, beta2::T) where {T<:Number}
+function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{T,2}, C::SharedArray{T,2}, beta1::T, beta2::T, ids::Vector{<:Integer}) where {T<:Number}
 # TODO send the worker SGD and objFun onl once
 
-    nex = size(Y,2)
+    println("Examples : ", length(ids))
+
+    nex = length(ids)
     nworkers = length(Y.pids)
-    ids = randperm(nex)
     lr = this.learningRate
     #lr = this.learningRate*nworkers
     dJ = zeros(T,size(xc))
@@ -141,7 +152,6 @@ function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{
         else
            dJ = lr*dJk + this.momentum*dJ
         end
-        #xc = xc - dJ
 
         # Exchange weights
         update = Future(1)
