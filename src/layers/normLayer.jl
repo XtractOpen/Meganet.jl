@@ -35,27 +35,27 @@ function getTVNormLayer(TYPE::Type,nData;eps = convert(TYPE,1e-3),isTrainable::B
     end
 end
 
-function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=true) where {T <: Number}
+function apply(this::normLayer{T},theta::Array{T},Yin::Array{T,2},dA,doDerivative=true) where {T <: Number}
 
      # first organize Y with channels
     nf  = this.nData[2]::Int
     nex = div(length(Yin),nFeatIn(this))::Int
     Y = reshape(Yin,:,nf,nex)
 
-    dA = (T)[]
+    dA = Array{T,2}(0,0)
 
     # subtract mean across pixels
     m = mean(Y, this.doNorm)
-    Yout = Y .- m
+    Y .-= m
 
     # normalize
     ep = this.eps
-    mean!(x -> x^2, m, Yout)
+    mean!(x -> x^2, m, Y)
     m .= sqrt.(m .+ ep)
-    Yout .= Yout ./ m
+    Y .= Y ./ m
 
-    Yout2 = reshape(Yout,:,nex)
-    return Yout2, Yout2, dA
+    Yout = reshape(Y,:,nex)
+    return Yout, Yout, dA
 end
 
 function nTheta(this::normLayer)
