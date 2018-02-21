@@ -23,4 +23,9 @@ end
 @testset "regularizer" begin
 	include("regularization/runtests.jl")
 end
+
+@testset "utilities" begin
+	include("test_utilities.jl")
+end
+
 end

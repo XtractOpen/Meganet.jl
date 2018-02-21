@@ -90,3 +90,22 @@ function Base.mean!(f::Function, r::AbstractArray{T}, a::AbstractArray) where {T
 
     return x
 end
+
+"""
+    balance(nex::Int, batchsize::Int, n::Int)
+
+Evenly distribute the elements of `nex` in increments of `batchsize` into `n`
+chunks, ignoring the remainder.
+
+### Example
+    julia> balance(10, 1, 3)
+    3-element Array{UnitRange{Int64},1}:
+     1:3
+     4:6
+     7:9
+
+"""
+function balance(nex::Int, batchsize::Int, nworkers::Int)
+   batches_per_worker = floor(Int, nex/batchsize/nworkers)
+   [((p-1)*batchsize*batches_per_worker +1):(p*batchsize*batches_per_worker) for p in 1:nworkers]
+end
