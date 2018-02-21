@@ -120,14 +120,15 @@ function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{
     nex = size(Y,2)
     nworkers = length(Y.pids)
     ids = randperm(nex)
-    lr = this.learningRate*nworkers
+    lr = this.learningRate
+    #lr = this.learningRate*nworkers
     dJ = zeros(T,size(xc))
     tmp = Array{Any}(0,0)
 
     batchsize = div(this.miniBatch, nworkers)
 
-    for k=1:ceil(Int64,nex/batchsize)
-        idk = ids[(k-1)*this.miniBatch+1: min(k*this.miniBatch,nex)]
+    for k=1:ceil(Int64,nex/this.miniBatch)
+        idk = ids[(k-1)*batchsize+1: min(k*batchsize,nex)]
         if this.nesterov && !this.ADAM
             Jk,dummy,dJk = evalObjFctn(objFun, xc-this.momentum*dJ, Y[:,idk], C[:,idk], tmp);
         else
@@ -152,6 +153,7 @@ function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{
 end
 
 function update_weights!(xc::Vector{<:Number}, update::Future)
+    println("Derivative received from :$(update.whence)")
     dJ = fetch(update)
     xc .= xc .- dJ
 
