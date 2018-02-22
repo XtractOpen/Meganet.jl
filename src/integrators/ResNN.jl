@@ -48,27 +48,46 @@ function initTheta(this::ResNN{T}) where {T<:Number}
 end
 
 # ------- apply forward problems -----------
-function  apply(this::ResNN{T},theta_in::Array{T},Y0::Array{T},doDerivative=true) where {T<:Number}
+function  apply(this::ResNN{T},theta_in::Array{T},Y0::Array{T},tmp,doDerivative=true) where {T<:Number}
+    if isempty(tmp)
+        tmp = Array{Any}(this.nt+1,2)
+    end
+
+    if doDerivative
+        if isassigned(tmp,1,1)
+            tmp11 = tmp[1,1]
+            tmp11 .= Y0
+        else
+            tmp[1,1] = copy(Y0)
+        end
+    end
 
     nex = div(length(Y0),nFeatIn(this))
     Y   = reshape(Y0,:,nex)
-    tmp = Array{Any}(this.nt+1,2)
-    if doDerivative
-        tmp[1,1] = Y0
-    end
+
 
     theta = reshape(theta_in,:,this.nt)
 
     Ydata::Array{T,2} = zeros(T,0,nex)
     for i=1:this.nt
-        Z,dummy,tmp[i,2] = apply(this.layer,theta[:,i],Y,doDerivative)
-        Y +=  this.h * Z
-        if doDerivative
-            tmp[i+1,1] = Y
+        if !isassigned(tmp,i,2)
+            tmp[i,2] = Array{Any}(0)
         end
+        Z,dummy,tmp[i,2] = apply(this.layer,theta[:,i],Y,tmp[i,2],doDerivative)
+        Y +=  this.h * Z
         if this.outTimes[i]==1
             Ydata = [Ydata;this.Q*Y]
         end
+
+        if doDerivative
+            if isassigned(tmp,i+1,1)
+                tmp1 = tmp[i+1,1]
+                tmp1 .= Y
+            else
+                tmp[i+1,1] = copy(Y)
+            end
+        end
+
     end
     return Ydata,Y,tmp
 end

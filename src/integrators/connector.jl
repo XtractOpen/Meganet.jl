@@ -17,16 +17,24 @@ function getConnector(TYPE::Type, K; b = zero(TYPE),outTimes=0,Q=I)
 	return Connector(K,b,outTimes,Q);
 end
 
-
-function apply(this::Connector{T},theta::Array{T},Y0::Array{T},doDerivative=true) where {T <: Number}
+function apply(this::Connector{T},theta::Array{T},Y0::Array{T},tmp,doDerivative=true) where {T <: Number}
     nex = div(length(Y0),nFeatIn(this))
     Y0  = reshape(Y0,:,nex)
+
+    if doDerivative
+        if isempty(tmp)
+            tmp = copy(Y0)
+        else
+            tmp .= Y0
+        end
+    end
+
     Y = this.K*Y0 .+ this.b
     Ydata::Array{T,2} = Array{T, 2}(0, 0) # Temporary fix until we know what type Q is
     if this.outTimes==1
         Ydata = this.Q*Y
     end
-    tmp = Y0;
+
     return Ydata, Y, tmp
 end
 

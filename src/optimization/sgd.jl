@@ -25,7 +25,7 @@ end
 
 Base.display(this::SGD)=println("SGD(maxEpochs=$(this.maxEpochs),miniBatch=$(this.miniBatch),learningRate=$(this.learningRate),momentum=$(this.momentum),nesterov=$(this.nesterov),ADAM=$(this.ADAM))")
 
-function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array{T},Yv::Array{T},Cv::Array{T}) where {T}
+function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array{T},Yv::Array{T},Cv::Array{T}) where {T<:Number}
 
     # evaluate training and validation
     epoch = 1;
@@ -44,6 +44,8 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
 
     if this.out; display(this); end
 
+    # Declare tmp - We know nothing about its shape or datatypes
+    tmp = Array{Any}(0,0)
 
     while epoch <= this.maxEpochs
         nex = size(Y,2)
@@ -52,9 +54,9 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
         for k=1:ceil(Int64,nex/this.miniBatch)
             idk = ids[(k-1)*this.miniBatch+1: min(k*this.miniBatch,nex)]
             if this.nesterov && !this.ADAM
-                Jk,dummy,dJk = evalObjFctn(objFun,xc-this.momentum*dJ,Y[:,idk],C[:,idk]);
+                Jk,dummy,dJk,tmp = evalObjFctn(objFun,xc-this.momentum*dJ,Y[:,idk],C[:,idk],tmp);
             else
-                Jk,dummy,dJk = evalObjFctn(objFun,xc,Y[:,idk],C[:,idk]);
+                Jk,dummy,dJk,tmp = evalObjFctn(objFun,xc,Y[:,idk],C[:,idk],tmp);
             end
 
             if this.ADAM
@@ -68,16 +70,15 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
         end
         # we sample 2^12 images from the training set for displaying the objective.
         idt     = ids[1:min(nex,2^12)]
-        Jc,para   = evalObjFctn(objFun,xc,Y[:,idt],C[:,idt]);
-        Jval,pVal = getMisfit(objFun,xc,Yv,Cv,false);
+        Jtrain,ptrain   = getMisfit(objFun,xc,Y[:,idt],C[:,idt],tmp,false);
+        Jval,pVal = getMisfit(objFun,xc,Yv,Cv,tmp,false);
 
         if this.out;
-            @printf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jc 100*(1-para[3]/para[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])
+            @printf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jtrain 100*(1-ptrain[3]/ptrain[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])
         end
 
         xOld       = copy(xc);
         epoch = epoch + 1;
     end
-    # His = struct('str',{str},'frmt',{frmt},'his',his(1:min(epoch,this.maxEpochs),:));
     return xc
 end
