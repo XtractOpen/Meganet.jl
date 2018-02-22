@@ -1,5 +1,6 @@
 export NN,getNN,initTheta
-
+# using TimerOutputs
+# to = TimerOutput()
 """
 NN Neural Network block
 
@@ -62,31 +63,47 @@ end
 
 
 # --------- forward problem ----------
-function apply(this::NN{T},theta::Array{T},Y0::Array{T,2},doDerivative=true) where {T<:Number}
-    Y::Array{T,2}  = copy(Y0)
+function apply(this::NN{T},theta::Array{T},Y::Array{T,2},tmp,doDerivative=true) where {T<:Number}
+
     nex = div(length(Y),nFeatIn(this))::Int
     nt = length(this.layers)
 
-    tmp = Array{Any}(nt+1,2)
+    if isempty(tmp) #TODO Will have to make sure size of Y doesnt change
+        tmp = Array{Any}(nt+1,2)
+    end
+
     if doDerivative
-        tmp[1,1] = Y0
+        if isassigned(tmp,1,1)
+            #tmp[1,1] .= Y This does not work, need to hack like below :)
+            tmp11 = tmp[1,1]
+            tmp11 .= Y
+        else
+            tmp[1,1] = copy(Y)
+        end
     end
 
     Ydata::Array{T,2} = zeros(T,0,nex)
     cnt = 0
     for i=1:nt
         ni = nTheta(this.layers[i])::Int
+        if !isassigned(tmp,i,2)
+            tmp[i,2] = Array{Any}(0)
+        end
+        Yd::Array{T,2}, Y, tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,tmp[i,2],doDerivative)
 
-        Yd::Array{T,2}, Y, tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
         if this.outTimes[i]==1
             Ydata = [Ydata; this.Q*Yd]
         end
         if doDerivative
-            tmp[i+1,1] = copy(Y)
+            if isassigned(tmp,i+1,1)
+                tmp1 = tmp[i+1,1]
+                tmp1 .= Y
+            else
+                tmp[i+1,1] = copy(Y)
+            end
         end
         cnt = cnt + ni
     end
-
     return Ydata,Y,tmp
 end
 

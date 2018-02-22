@@ -27,10 +27,10 @@ function scaleChannels!(Y::Array{T},s::Array{T},b::Array{T}) where {T <: Number}
     end
 end
 
-function apply(this::AffineScalingLayer{T},theta::Array{T},Y::Array{T},doDerivative=false) where {T <: Number}
+function apply(this::AffineScalingLayer{T},theta::Array{T},Y::Array{T},dA,doDerivative=false) where {T <: Number}
 
     Y   = reshape(copy(Y),this.nData[1], this.nData[2],:)
-    dA  = (T)[]
+    dA  = Array{T,2}(0,0)
     nex = size(Y,3)
 
     s2,b2 = splitWeights(this,theta);

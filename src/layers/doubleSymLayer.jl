@@ -7,6 +7,7 @@ export DoubleSymLayer,getDoubleSymLayer
 """
 mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNormNN{T}, normLayer{T}}} <: AbstractMeganetElement{T}
     activation  :: Function   # activation function
+    activation! :: Function # in place activation function
     K           :: TK   # Kernel model, e.g., convMod
     nLayer      :: TN   # normalization layer
     Bin         :: Array{T}   # Bias inside the nonlinearity
@@ -14,12 +15,12 @@ mutable struct DoubleSymLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchN
 end
 
 
-function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T},
+function getDoubleSymLayer(TYPE::Type,K,nLayer::AbstractMeganetElement{T};
                            Bin=zeros(nFeatOut(K),0),Bout=zeros(nFeatIn(K),0),
-                           activation=tanhActivation) where {T <: Number}
+                           activation=tanhActivation,activation_inplace=tanhActivation!) where {T <: Number}
     BinT = convert.(T, Bin)
     BoutT = convert.(T, Bout)
-    return DoubleSymLayer(activation,K,nLayer,BinT,BoutT);
+    return DoubleSymLayer(activation,activation_inplace,K,nLayer,BinT,BoutT);
 
 end
 
@@ -37,23 +38,36 @@ function splitWeights(this::DoubleSymLayer{T},theta::Array{T}) where {T<:Number}
     return th1, th2, th3, th4
 end
 
-function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},doDerivative=true) where {T<:Number}
-
+function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},tmp,doDerivative=true) where {T<:Number}
+    if isempty(tmp)
+        tmp = Array{Any}(2)
+        tmp[1] = Array{Any}(0)
+        tmp[2] = Array{Any}(0)
+    end
     #QZ = []
-    tmp = Array{Any}(2)
     nex = div(length(Yin),nFeatIn(this))::Int
     Y   = reshape(Yin,:,nex)
 
     theta1,theta2,theta3,theta4 = splitWeights(this,theta)
     Kop    = getOp(this.K,theta1)
-    KY     = Kop*Y
-    KY,dummy,tmp[1] = apply(this.nLayer,theta4,KY)
+    KY     = Kop*Y # TODO: Look into making convolution in place
+
+    KY,dummy,tmp[1] = apply(this.nLayer,theta4,KY,tmp[1],doDerivative)
     Yt     = KY
     if !isempty(theta2)
      Yt .+= this.Bin*theta2
     end
-    tmp[2] = copy(Yt)
-    Z::Array{T,2},      = this.activation(Yt,doDerivative)
+
+    if doDerivative
+        if isempty(tmp[2])
+            tmp[2] = copy(Yt)
+        else
+            tmp2 = tmp[2]
+            tmp2 .= Yt
+        end
+    end
+
+    Z::Array{T,2},      = this.activation!(Yt,[],false) #We don't want to do derivatives here?
     Z      = -(Kop'*Z)
     if !isempty(theta3)
         Z  .+= this.Bout*theta3
@@ -79,8 +93,8 @@ end
 
 function initTheta(this::DoubleSymLayer{T})  where {T<:Number}
     theta = [vec(initTheta(this.K));
-    T(0.1)*ones(T,size(this.Bin,2),1);
-    T(0.1)*ones(T,size(this.Bout,2),1);
+    T(0.01)*ones(T,size(this.Bin,2),1);
+    T(0.01)*ones(T,size(this.Bout,2),1);
     initTheta(this.nLayer)];
     return theta
 end
@@ -103,7 +117,7 @@ function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Ar
 end
 
 function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp)  where {T<:Number}
-
+    #TODO: Look into why this activation cannot be done in place (tests fail)
     dA = this.activation(tmp[2],true)[2]
 
     nex = div(length(dY),nFeatIn(this))

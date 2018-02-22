@@ -63,3 +63,30 @@ function meshgrid(vx::AbstractVector{T}, vy::AbstractVector{T},
 	oo = ones(Int, o)
 	(vx[om, :, oo], vy[:, on, oo], vz[om, on, :])
 end
+
+"""
+    mean(f, A, region)
+
+Apply the function `f` to each element of `A`, and compute the mean along dimension in `region`.
+"""
+function Base.mean(f::Function, a::AbstractArray, region::Int)
+    x = Base.mapreducedim(f, +, a, region)
+    n = max(1, Base._length(x)) // Base._length(a)
+    x .= x .* n
+
+    return x
+end
+
+"""
+    mean!(f, r, A)
+
+Apply `f` to each element of A, and compute the mean over the singleton dimensions of `r`, and write the results to `r`.
+"""
+function Base.mean!(f::Function, r::AbstractArray{T}, a::AbstractArray) where {T<:Number}
+    fill!(r, zero(T))
+    x = Base.mapreducedim!(f, +, r, a)
+    n = max(1, Base._length(x)) // Base._length(a)
+    x .= x .* n
+
+    return x
+end
