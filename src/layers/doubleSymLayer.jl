@@ -67,7 +67,7 @@ function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},tmp,doDer
         end
     end
 
-    Z::Array{T,2},      = this.activation!(Yt,[],false) #We don't want to do derivatives here?
+    Z::Array{T,2},      = this.activation!(Yt,[],false)
     Z      = -(Kop'*Z)
     if !isempty(theta3)
         Z  .+= this.Bout*theta3
