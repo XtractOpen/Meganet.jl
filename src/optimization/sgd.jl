@@ -61,10 +61,11 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
             idk = ids[(k-1)*this.miniBatch+1: min(k*this.miniBatch,nex)]
             indices = balance(length(idk), 2, nw)
 
+            test = train(this, objFun, xc, Ys, Cs, beta1, beta2, idk)
             for (i, pid) in enumerate(Ys.pids)
                 dJ[i] = @fetchfrom pid train(this, objFun, xc, Ys, Cs, beta1, beta2, idk[indices[i]])
             end
-
+            println("Residual ($(nw) workers) : ", norm(test - sum(dJ)))
             xc .= xc .- sum(dJ)
         end
 
@@ -167,8 +168,8 @@ function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{
     idk = ids
     nex = length(ids)
     nworkers = length(Y.pids)
-    #lr = this.learningRate
-    lr = this.learningRate*nworkers
+    lr = this.learningRate
+    #lr = this.learningRate*nworkers
     dJ = zeros(T,size(xc))
     tmp = Array{Any}(0,0)
 
