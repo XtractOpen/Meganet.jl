@@ -32,7 +32,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
 
     # evaluate training and validation
     epoch = 1
-    Jc_old = Inf
+    Jtrain_old = Inf
     xOld = copy(xc)
     dJ = zeros(T,size(xc))
     mJ = zeros(T,size(xc))
@@ -48,8 +48,43 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
     Ys = SharedArray(Y)
     Cs = SharedArray(C)
     println("Using $(nw) workers...")
+    tmp = Array{Any}(0,0)
+    dJ = Vector{Vector{T}}(nw)
 
     while epoch <= this.maxEpochs
+
+        # Shuffle and balance
+        nex = size(Ys,2)
+        ids = randperm(nex)
+
+        for k=1:ceil(Int64,nex/this.miniBatch)
+            idk = ids[(k-1)*this.miniBatch+1: min(k*this.miniBatch,nex)]
+            indices = balance(length(idk), 2, nw)
+
+            for (i, pid) in enumerate(Ys.pids)
+                dJ[i] = @fetchfrom pid train(this, objFun, xc, Ys, Cs, beta1, beta2, idk[indices[i]])
+            end
+
+            xc .= xc .- sum(dJ)
+        end
+
+        # we sample 2^12 images from the training set for displaying the objective.
+        idt     = ids[1:min(nex,2^12)]
+        Jtrain,ptrain   = getMisfit(objFun,xc,Y[:,idt],C[:,idt],tmp,false);
+        Jval,pVal = getMisfit(objFun,xc,Yv,Cv,tmp,false);
+
+        if this.out;
+            s = @sprintf "%d\t%1.2e\t%1.2f\t%1.2e\t%1.2e\t%1.2f\n" epoch Jtrain 100*(1-ptrain[3]/ptrain[2]) norm(xOld-xc) Jval 100*(1-pVal[3]/pVal[2])
+            Jtrain < Jtrain_old ? (color = :light_green) : (color = :light_red)
+            print_with_color(color, s)
+            Jtrain_old = Jtrain
+        end
+
+        xOld       = copy(xc);
+        epoch = epoch + 1;
+    end
+
+    #= while epoch <= this.maxEpochs
         tic()
 
         # Shuffle and balance
@@ -100,7 +135,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
         xOld   = copy(xc);
         epoch += 1
         toc()
-    end
+    end =#
 
     return xc
 end
@@ -127,19 +162,17 @@ Train on the local part of the distributed data in Y
 function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{T,2}, C::SharedArray{T,2}, beta1::T, beta2::T, ids::Vector{<:Integer}) where {T<:Number}
 # TODO send the worker SGD and objFun onl once
 
-    println("Examples : ", length(ids))
+    #println("Examples : ", length(ids))
 
+    idk = ids
     nex = length(ids)
     nworkers = length(Y.pids)
-    lr = this.learningRate
-    #lr = this.learningRate*nworkers
+    #lr = this.learningRate
+    lr = this.learningRate*nworkers
     dJ = zeros(T,size(xc))
     tmp = Array{Any}(0,0)
 
-    batchsize = div(this.miniBatch, nworkers)
-
-    for k=1:ceil(Int64,nex/this.miniBatch)
-        idk = ids[(k-1)*batchsize+1: min(k*batchsize,nex)]
+    #for k=1:ceil(Int64,nex/this.miniBatch)
         if this.nesterov && !this.ADAM
             Jk,dummy,dJk = evalObjFctn(objFun, xc-this.momentum*dJ, Y[:,idk], C[:,idk], tmp);
         else
@@ -154,12 +187,12 @@ function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{
         end
 
         # Exchange weights
-        update = Future(1)
-        put!(update, dJ)
-        xc = @fetchfrom 1 update_weights!(Meganet.XC, update)
-    end
+        #update = Future(1)
+        #put!(update, dJ)
+        #xc = @fetchfrom 1 update_weights!(Meganet.XC, update)
+    #end
 
-    return nothing
+    return dJ
 end
 
 function update_weights!(xc::Vector{<:Number}, update::Future)
