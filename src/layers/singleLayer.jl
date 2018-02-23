@@ -31,11 +31,12 @@ end
 
 function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},tmp,doDerivative=false) where {T <: Number}
 
+    println("Y singleLayer>apply    :   ", size(Yin))
     nex = div(length(Yin),nFeatIn(this))
     Y   = reshape(Yin,:,nex)
     th1,th2,th3,th4 = splitWeights(this,theta)
 
-    Yout::Array{T,2}     =  getOp(this.K,th1)*Y 
+    Yout::Array{T,2}     =  getOp(this.K,th1)*Y
     if doDerivative
       if isempty(tmp)
         tmp = copy(Yout)
@@ -43,7 +44,7 @@ function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},tmp,doDerivati
         tmp .= Yout
       end
     end
-  
+
     Yout,  = apply(this.nLayer,th4,Yout,[],false) #TODO passing empty array is a bit hacky
     Yout .+= this.Bin * th2
 
@@ -78,22 +79,22 @@ end
 function Jthetamv(this::singleLayer{T},dtheta::Array{T},theta::Array{T},Yin::Array{T},tmp::Array{T}) where {T <: Number}
     nex            = div(length(Yin),nFeatIn(this))
     Y              = reshape(Yin,:,nex)
-	
+
     th1,th2,th3,th4     = splitWeights(this,theta)
     dth1,dth2,dth3,dth4 = splitWeights(this,dtheta)
-	
+
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
     Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
-    
-	
-    dZ::Array{T,2} = Jthetamv(this.K,dth1,th1,Y) 
+
+
+    dZ::Array{T,2} = Jthetamv(this.K,dth1,th1,Y)
     Kop = getOp(this.K,th1)
     dZ  = Jmv(this.nLayer,dth4,dZ,th4,tmp,tmpNL)[2]
 	dZ .+= this.Bin*dth2
-    dZ .*= dA 
+    dZ .*= dA
     dZ .+= this.Bout*dth3
     return dZ, dZ
 end
@@ -101,14 +102,14 @@ end
 function JYmv(this::singleLayer{T},dYin::Array{T},theta::Array{T},Y::Array{T},tmp::Array{T}) where {T <: Number}
     nex = div(length(dYin),nFeatIn(this))
     th1,th2,th3,th4 = splitWeights(this,theta)
- 
+
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
     Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
- 
- 
+
+
     Kop  = getOp(this.K,th1)
     dY   = reshape(dYin,:,nex)
     dZ   = Kop*dY
@@ -127,17 +128,17 @@ function Jmv(this::singleLayer{T},dtheta::Array{T},dYin::Array{T},theta::Array{T
     Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
- 
+
     dY = reshape(dYin,:,nex);
     Kop = getOp(this.K,th1)
     dZ::Array{T, 2} = Kop*dY;
 
     Y   = reshape(Yin,:,nex);
-    dZ += Jthetamv(this.K,dth1,th1,Y) 
+    dZ += Jthetamv(this.K,dth1,th1,Y)
     dZ  = Jmv(this.nLayer,dth4,dZ,th4,tmp,tmpNL)[2]
 	dZ .+ this.Bin*dth2
 
-    dZ .*= dA 
+    dZ .*= dA
     dZ .+= this.Bout*dth3
     return dZ,dZ
 end
@@ -147,24 +148,24 @@ function JTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T}
     Z    = reshape(Zin,:,nex)
     th1,th2,th3,th4  = splitWeights(this,theta)
     Kop = getOp(this.K,th1)
-	
+
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
     Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
- 
+
 
     dth3      = vec(sum(this.Bout'*Z,2))
     dAZ       = dA.*Z
     dth2      = vec(sum(this.Bin'*reshape(dAZ,:,nex),2))
-    
+
 	dth4,dAZ  = JTmv(this.nLayer,dAZ,zeros(T,0),th4,tmp,tmpNL) # this not type stable
     dth1      = JthetaTmv(this.K, dAZ,th1,Y) # this not type stable
 
     dY   = Kop'*reshape(dAZ,:,nex)
     dtheta = [vec(dth1); vec(dth2); vec(dth3); vec(dth4)]
-    
+
     return dtheta, dY
 
 end
@@ -178,7 +179,7 @@ function JthetaTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Arr
     Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
- 
+
 
     Z         = reshape(Zin,:,nex);
     dAZ       = dA.*Z;
@@ -190,16 +191,16 @@ function JthetaTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Arr
 end
 
 function JYTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
-    
+
 	nex  = div(length(Y),nFeatIn(this))
     th1,th2,th3,th4 = splitWeights(this,theta)
-    
+
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
     Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
     Yout .+= this.Bin * th2
 	A,dA   = this.activation(Yout,true)
- 
+
 	Kop = getOp(this.K,th1)
     Z    = reshape(Zin,:,nex)
     dAZ::Array{T,2}  = dA.*Z

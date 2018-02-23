@@ -2,7 +2,7 @@ using MAT, Meganet
 BLAS.set_num_threads(1)
 srand(123)
 
-n = 512
+n = 8
 Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/");
 
 # using PyPlot
@@ -11,12 +11,12 @@ Y_train,C_train,Y_test,C_test = getCIFAR10(n,Pkg.dir("Meganet")*"/data/CIFAR10/"
 # y[:,:,1] = y[:,:,1]';y[:,:,2] = y[:,:,2]';y[:,:,3] = y[:,:,3]';
 # figure(); imshow(y)
 
-miniBatchSize = 64;
+miniBatchSize = 2
 nImg = [32; 32]
 cin  = 3
-nc   = [16;32;64;64]
-nt   = 2*[1;1;1]
-h    = [1.;1.;1.]
+nc   = [16; 16]
+nt   = [1]
+h    = [1]
 
 TYPE = Float32;
 
@@ -70,11 +70,14 @@ display(net)
 
 
 # regularizers
-pRegTh = getTikhonovReg(TYPE;alpha=4e-4)
-pRegW = getTikhonovReg(TYPE;alpha=4e-4)
-pLoss = getSoftMaxLoss(TYPE);
-objFun = dnnObjFctn(net,pLoss,pRegTh,pRegW)
-opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=200,miniBatch=miniBatchSize,out=true, nesterov=true)
+pRegTh  = getTikhonovReg(TYPE;alpha = 0.0)
+pRegW   = getTikhonovReg(TYPE;alpha = 0.0)
+pLoss   = getSoftMaxLoss(TYPE);
+objFun  = dnnObjFctn(net,pLoss,pRegTh,pRegW)
+opt     = getSGDsolver(TYPE, learningRate=1e-2, maxEpochs=200,
+                                                miniBatch=miniBatchSize,
+                                                out=true,
+                                                nesterov=true)
 
 W      = 0.1*vec(randn(TYPE,10,nFeatOut(net)+1));
 W = min.(W,.2);

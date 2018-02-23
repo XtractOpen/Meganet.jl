@@ -1,4 +1,5 @@
 export SGD, solve, getSGDsolver, solve_local
+#import Plots
 
 """
 Stochastic Gradient Descent
@@ -50,6 +51,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
     println("Using $(nw) workers...")
     tmp = Array{Any}(0,0)
     dJ = Vector{Vector{T}}(nw)
+    TEST = Vector{T}(nw)
 
     while epoch <= this.maxEpochs
 
@@ -59,13 +61,44 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
 
         for k=1:ceil(Int64,nex/this.miniBatch)
             idk = ids[(k-1)*this.miniBatch+1: min(k*this.miniBatch,nex)]
-            indices = balance(length(idk), 2, nw)
+            indices = balance(length(idk), 1, 2)
 
-            test = train(this, objFun, xc, Ys, Cs, beta1, beta2, idk)
+            println("""
+            idk :   $(idk)
+            ind1 :   $(idk[indices[1]])
+            ind2 :   $(idk[indices[2]])
+            """)
+            J, test = train(this, objFun, xc, Ys, Cs, beta1, beta2, idk)
+            J1, test1 = train(this, objFun, xc, Ys, Cs, beta1, beta2, idk[indices[1]])
+            J2, test2 = train(this, objFun, xc, Ys, Cs, beta1, beta2, idk[indices[2]])
+            A1,B1 = splitWeights(objFun, test)
+            A2,B2 = splitWeights(objFun, test1 .+ test2)
+            println("Theta          : ", norm(A1 - A2))
+            println("Weights        : ", norm(B1 - B2))
+            println("""
+            J               : $J
+            avg             : $((J2 + J1)/2)
+
+            Residual        : $(norm(test .- (test1 .+ test2)))
+            %               : $(100*norm(test .- (test1+ test2))/ norm(test))
+            """)
             for (i, pid) in enumerate(Ys.pids)
-                dJ[i] = @fetchfrom pid train(this, objFun, xc, Ys, Cs, beta1, beta2, idk[indices[i]])
+                TEST[i], dJ[i] = @fetchfrom pid train(this, objFun, xc, Ys, Cs, beta1, beta2, idk[indices[i]])
             end
-            println("Residual ($(nw) workers) : ", norm(test - sum(dJ)))
+
+            #=Plots.pyplot()
+            p = Plots.plot(test)
+            Plots.plot!(p, test1 .+ test2)
+            Plots.display(p)
+            sleep(100) =#
+
+            #println("Residual ($(nw) workers) : ", norm(test - sum(dJ)./2), "  |  ", 100*(norm(test-sum(dJ)./2)/norm(test)), "%")
+            println("""
+            C1 Residual :   $(norm(test1 - dJ[1]))
+            C2 Residual :   $(norm(test2 - dJ[2]))
+
+            S Residual  :   $(norm((test1+test2)./2 - test))
+            """)
             xc .= xc .- sum(dJ)
         end
 
@@ -175,9 +208,9 @@ function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{
 
     #for k=1:ceil(Int64,nex/this.miniBatch)
         if this.nesterov && !this.ADAM
-            Jk,dummy,dJk = evalObjFctn(objFun, xc-this.momentum*dJ, Y[:,idk], C[:,idk], tmp);
+            Jk,dummy,dJk = evalObjFctn(objFun, copy(xc)-this.momentum*dJ, copy(Y[:,idk]), copy(C[:,idk]), copy(tmp));
         else
-            Jk,dummy,dJk = evalObjFctn(objFun, xc, Y[:,idk], C[:,idk], tmp);
+            Jk,dummy,dJk = evalObjFctn(objFun, copy(xc), copy(Y[:,idk]), copy(C[:,idk]), copy(tmp));
         end
 
         if this.ADAM
@@ -193,7 +226,7 @@ function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{
         #xc = @fetchfrom 1 update_weights!(Meganet.XC, update)
     #end
 
-    return dJ
+    return Jk, dJ
 end
 
 function update_weights!(xc::Vector{<:Number}, update::Future)
