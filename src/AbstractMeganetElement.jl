@@ -175,6 +175,7 @@ Output:
 """
 function getJYOp(this::AbstractMeganetElement{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
     nex    = div(length(Y),nFeatIn(this))
+    
     m      = nex*nDataOut(this)
     n      = length(Y);
     Amv    = x -> JYmv(this,x,theta,Y,tmp)
@@ -353,6 +354,7 @@ Output:
   J     - Jacobian, LinearOperator
 """
 function getJOp(this::AbstractMeganetElement{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
+   
     nex    = div(length(Y),nFeatIn(this))
     m      = nex*nDataOut(this)
     nth    = length(theta)
