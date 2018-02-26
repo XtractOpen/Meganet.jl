@@ -31,7 +31,6 @@ end
 
 function apply(this::singleLayer{T},theta::Array{T},Yin::Array{T},tmp,doDerivative=false) where {T <: Number}
 
-    println("Y singleLayer>apply    :   ", size(Yin))
     nex = div(length(Yin),nFeatIn(this))
     Y   = reshape(Yin,:,nex)
     th1,th2,th3,th4 = splitWeights(this,theta)
