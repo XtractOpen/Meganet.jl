@@ -59,7 +59,7 @@ function apply(this::DoubleSymLayer{T},theta::Array{T},Yin::Array{T,2},tmp,doDer
     if !isempty(theta2)
      KY .+= this.Bin*theta2
     end
-      
+
     Z::Array{T,2},      = this.activation!(KY,[],false)
 
     Z      = -(Kop'*Z)
@@ -105,7 +105,7 @@ function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Ar
      KY .+= this.Bin*th2
     end
     A,dA   = this.activation(KY,true)
-    
+
 
 	Kop    = getOp(this.K,th1)
     dKop   = getOp(this.K,dth1)
@@ -116,7 +116,7 @@ function Jthetamv(this::DoubleSymLayer{T},dtheta::Array{T},theta::Array{T},Y::Ar
     	dY .+= this.Bin*dth2
 	end
     dY = -(Kop'*(dA.*dY) + dKop'*A)
-	if !isempty(dth3) 
+	if !isempty(dth3)
 		dY .+= this.Bout*dth3
 	end
     return dY, dY
@@ -136,7 +136,7 @@ function JYmv(this::DoubleSymLayer{T},dY::Array{T},theta::Array{T},Y::Array{T},t
      KY .+= this.Bin*th2
     end
     A,dA   = this.activation(KY,true)
-    
+
 
     Kop = getOp(this.K,th1)
     dY = Kop*dY
@@ -158,7 +158,7 @@ function Jmv(this::DoubleSymLayer{T},dtheta::Array{T},dY::Array{T},theta::Array{
      KY .+= this.Bin*th2
     end
     A,dA   = this.activation(KY,true)
-    
+
 	Kop    = getOp(this.K,th1)
     dKop   = getOp(this.K,dth1)
     if length(dY)>1
@@ -190,7 +190,7 @@ function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Ar
     Z         = reshape(Z,:,nex)
     th1,th2,th3,th4  = splitWeights(this,theta)
     Kop       = getOp(this.K,th1)
-    
+
 	# re-compute derivative of activation
 	KY              = copy(tmp);
     KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,[],true)
@@ -198,7 +198,7 @@ function JthetaTmv(this::DoubleSymLayer{T},Z::Array{T},dummy::Array{T},theta::Ar
      KY .+= this.Bin*th2
     end
     A,dA   = this.activation(KY,true)
-    
+
 	dth3      = vec(sum(this.Bout'*Z,2))
     dAZ       = dA.*(Kop*Z)
     dth2      = vec(sum(this.Bin'*dAZ,2))
@@ -217,7 +217,7 @@ function JYTmv(this::DoubleSymLayer{T},Zin::Array{T},dummy::Array{T},theta::Arra
     Z         = reshape(Zin,:,nex)
     th1,th2,th3,th4  = splitWeights(this,theta)
     Kop       = getOp(this.K,th1)
-    
+
 	# re-compute derivative of activation
 	KY              = copy(tmp);
     KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,[],true)
@@ -225,9 +225,9 @@ function JYTmv(this::DoubleSymLayer{T},Zin::Array{T},dummy::Array{T},theta::Arra
      KY .+= this.Bin*th2
     end
     A,dA   = this.activation(KY,true)
-    
-	
-	
+
+
+
     dAZ       = dA.*(Kop*Z)
     dAZ       = JYTmv(this.nLayer,dAZ,(T)[],th4,tmp,tmpNL)
     dAZ_out   = reshape(dAZ,:,nex)
@@ -243,7 +243,7 @@ function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
     Y         = reshape(Yin,:,nex)
     th1, th2, th3, th4  = splitWeights(this,theta)
     #Kop       = getOp(this.K,th1)
-	
+
 	# re-compute derivative of activation
 	KY              = copy(tmp);
     KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,[],true)
@@ -251,8 +251,8 @@ function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
      KY .+= this.Bin*th2
     end
     A,dA   = this.activation(KY,true)
-    
-	
+
+
     dth3      = vec(sum(this.Bout'*Z,2))
 
     KopZ = Amv(this.K, th1, Z)
