@@ -34,7 +34,6 @@ end
 
 function Amv(this::convMKLKernel{T},theta::Array{T},Y::Array{T}) where {T<:Number}
     ## We assume that the data Y is held in the order XYCN.
-	println("AMV")
 	sK = this.sK;
    
     nImg = this.nImg;
@@ -91,7 +90,6 @@ return AY_out
 end
 
 function ATmv(this::convMKLKernel{T},theta::Array{T},Zin::Array{T}) where {T<:Number}
-	println("ATMV")
 	nImg  = this.nImg;
 	sK    = this.sK;
     nex   =  div(numel(Zin),prod(nImgOut(this)));
@@ -152,7 +150,6 @@ function Jthetamv(this::convMKLKernel{T},dtheta::Array{T},dummy::Array{T},Y::Arr
 end
 
 function JthetaTmv(this::convMKLKernel{T}, Zin::Array{T}, dummy::Array{T}, Yin::Array{T}) where {T<:Number}
-	println("JThetaTMV")
 	sK = this.sK
 	nImg = this.nImg
     nex   = div(numel(Yin),prod(nImgIn(this)))
@@ -177,7 +174,7 @@ end
 function JthetaTmv(this::convMKLKernel{T}, Zin::Array{T}, dummy::Array{T}, Yin::Array{T}, hack::Int) where {T<:Number}
     # derivative of Z*(A(theta)*Y) w.r.t. theta
    
-    sK = this.sK
+   sK = this.sK
    nImg = this.nImg
    nex   = div(numel(Yin),prod(nImgIn(this)))
    # compute convolution
