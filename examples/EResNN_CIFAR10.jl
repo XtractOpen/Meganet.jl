@@ -74,7 +74,7 @@ pRegTh  = getTikhonovReg(TYPE;alpha = 0.0)
 pRegW   = getTikhonovReg(TYPE;alpha = 0.0)
 pLoss   = getSoftMaxLoss(TYPE);
 objFun  = dnnObjFctn(net,pLoss,pRegTh,pRegW)
-opt     = getSGDsolver(TYPE, learningRate=1e-2, maxEpochs=20,
+opt     = getSGDsolver(TYPE, learningRate=1e-2, maxEpochs=10,
                                                 miniBatch=miniBatchSize,
                                                 out=true,
                                                 nesterov=true)
