@@ -71,7 +71,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
         nex = size(Ys,2)
         ids = randperm(nex)
 
-        for k=1:ceil(Int64,nex/(this.miniBatch))
+        @time for k=1:ceil(Int64,nex/(this.miniBatch))
             idk = ids[(k-1)*this.miniBatch+1: min(k*this.miniBatch,nex)]
             indices = balance(length(idk), 1, nw)
 
@@ -107,6 +107,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
         end
 
         # Validate, and print status
+        @time begin
         nex = size(Yv,2)
         indices = balance(nex, 1, nw)
         JvalA = Vector{T}(nw)
@@ -116,6 +117,7 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
         end
         Jval = sum(JvalA)./nw
         Pval = sum(PvalA)./nw
+        end
 
         if this.out
             Jhat = mean(Jtrain)
@@ -127,12 +129,13 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
 
         xOld   = copy(xc);
         epoch += 1;
+        println("-------------------------------")
     end
     return xc
 end
 
 """
-Train on the local part of the distributed data in Y
+Train on the local part of the shared data in Y
 """
 function train(this::SGD{T}, objFun::dnnObjFctn, xc::Array{T,1}, Y::SharedArray{T,2}, C::SharedArray{T,2}, beta1::T, beta2::T, idk::Vector{<:Integer}) where {T<:Number}
 
