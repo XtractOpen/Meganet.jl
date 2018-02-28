@@ -129,7 +129,6 @@ function solve(this::SGD{T},objFun::dnnObjFctn,xc::Array{T},Y::Array{T},C::Array
 
         xOld   = copy(xc);
         epoch += 1;
-        println("-------------------------------")
     end
     return xc
 end

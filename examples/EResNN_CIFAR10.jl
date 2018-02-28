@@ -70,11 +70,11 @@ display(net)
 
 
 # regularizers
-pRegTh  = getTikhonovReg(TYPE;alpha = 0.0)
-pRegW   = getTikhonovReg(TYPE;alpha = 0.0)
+pRegTh  = getTikhonovReg(TYPE;alpha = 4e-4)
+pRegW   = getTikhonovReg(TYPE;alpha = 4e-4)
 pLoss   = getSoftMaxLoss(TYPE);
 objFun  = dnnObjFctn(net,pLoss,pRegTh,pRegW)
-opt     = getSGDsolver(TYPE, learningRate=1e-2, maxEpochs=10,
+opt     = getSGDsolver(TYPE, learningRate=1e-2, maxEpochs=50,
                                                 miniBatch=miniBatchSize,
                                                 out=true,
                                                 nesterov=true)
