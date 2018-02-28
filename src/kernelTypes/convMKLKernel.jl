@@ -173,7 +173,7 @@ end
 function JthetaTmv(this::convMKLKernel{T}, Zin::Array{T}, dummy::Array{T}, Yin::Array{T}, hack::Int) where {T<:Number}
     # derivative of Z*(A(theta)*Y) w.r.t. theta
    
-    sK = this.sK
+   sK = this.sK
    nImg = this.nImg
    nex   = div(numel(Yin),prod(nImgIn(this)))
    # compute convolution
