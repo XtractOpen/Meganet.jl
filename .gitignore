@@ -7,3 +7,6 @@ data/
 *.jld
 *.pyc
 .vscode/
+
+# Ignore the big mkl library
+src/mkl/libmklml_intel.so

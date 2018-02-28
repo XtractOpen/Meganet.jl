@@ -122,7 +122,6 @@ function JthetaTmv(this::normLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T
 end
 
 function JYTmv(this::normLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T},Yin::Array{T},dA=nothing) where {T <: Number}
-
     nex = div(length(Yin),nFeatIn(this))
     nf  = this.nData[2]
 
