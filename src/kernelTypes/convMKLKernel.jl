@@ -1,6 +1,5 @@
 export convMKLKernel,Amv,ATmv,getConvMKLKernel
-include("/home/moumita/.julia/v0.6/test/callmkldnn.jl")
-# include("/home/moumita/.julia/v0.6/Meganet/src/kernelTypes/convGEMMKernel.jl")
+include(Pkg.dir("Meganet")*"/src/mkl/callmkldnn.jl")
 using DistributedArrays
 mutable struct convMKLKernel{T} <: AbstractConvKernel{T}
     nImg    		:: Array{Int,1}
@@ -34,7 +33,6 @@ end
 
 function Amv(this::convMKLKernel{T},theta::Array{T},Y::Array{T}) where {T<:Number}
     ## We assume that the data Y is held in the order XYCN.
-	println("AMV")
 	sK = this.sK;
    
     nImg = this.nImg;
@@ -91,7 +89,6 @@ return AY_out
 end
 
 function ATmv(this::convMKLKernel{T},theta::Array{T},Zin::Array{T}) where {T<:Number}
-	println("ATMV")
 	nImg  = this.nImg;
 	sK    = this.sK;
     nex   =  div(numel(Zin),prod(nImgOut(this)));
@@ -152,7 +149,6 @@ function Jthetamv(this::convMKLKernel{T},dtheta::Array{T},dummy::Array{T},Y::Arr
 end
 
 function JthetaTmv(this::convMKLKernel{T}, Zin::Array{T}, dummy::Array{T}, Yin::Array{T}) where {T<:Number}
-	println("JThetaTMV")
 	sK = this.sK
 	nImg = this.nImg
     nex   = div(numel(Yin),prod(nImgIn(this)))
