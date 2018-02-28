@@ -1,4 +1,5 @@
-using MAT, Meganet
+using MAT
+@everywhere using Meganet
 BLAS.set_num_threads(1)
 srand(123)
 
