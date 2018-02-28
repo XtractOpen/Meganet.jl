@@ -18,9 +18,10 @@ h    = [1.;1.;1.]
 
 TYPE = Float32;
 
-getConvKernel = (nImg,sK) -> getConvGEMMKernel(TYPE,nImg,sK);
+# getConvKernel = (nImg,sK) -> getConvGEMMKernel(TYPE,nImg,sK);
 # getConvKernel = (nImg,sK) -> getConvFFTKernel(TYPE,nImg,sK);
 #getConvKernel = (nImg,sK) -> getSparseConvKernel2D(TYPE,nImg,sK);
+getConvKernel = (nImg,sK) -> getConvMKLKernel(TYPE,nImg,sK);
 
 # opening layer
 K1 = getConvKernel(nImg,[3,3,cin,nc[1]]);

@@ -11,7 +11,7 @@ mutable struct singleLayer{T, TK <: AbstractConvKernel{T}, TN <: Union{batchNorm
 end
 
 function getSingleLayer(TYPE::Type, K,nLayer;Bin=zeros(TYPE,nFeatOut(K),0),Bout=zeros(TYPE,nFeatOut(K),0),
-                        activation=tanhActivation,activation_inplace=tanhActivation!)
+                        activation=reluActivation,activation_inplace=reluActivation!)
 	singleLayer(activation,activation_inplace,K,nLayer,Bin,Bout);
 end
 

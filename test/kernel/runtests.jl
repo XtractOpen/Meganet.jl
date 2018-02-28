@@ -13,3 +13,7 @@ end
 @testset "convGEMMKernel" begin
 include("convGEMMKernelTest.jl")
 end
+
+@testset "convMKLKernel" begin
+include("convMKLKernelTest.jl")
+end
