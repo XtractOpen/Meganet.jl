@@ -13,13 +13,10 @@ function lastOne(n)
     return ei
 end
 
-function fft2(Y)
-    return fft(fft(Y,1),2)
-end
-
-function ifft2(Y)
-    return ifft(ifft(Y,1),2)
-end
+fft2(Y) =  fft(Y,(1,2))
+fft2!(Y) =  fft!(Y,(1,2))
+ifft2(Y)= ifft(Y,(1,2))
+ifft2!(Y)= ifft!(Y,(1,2))
 
 
 function ndgrid_fill(a, v, s, snext)
