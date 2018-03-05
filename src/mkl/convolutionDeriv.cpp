@@ -56,9 +56,7 @@ void ConvolutionDeriv( const int batch,
     memory::dims conv_dst_tz = {batch, n1, nimage1, nimage2};
 
     memory::dims conv_strides = {1, 1};
-    //  auto conv_padding = {1, 1};  // works for 3*3
-    const int pad = (nk-1) / 2;
-    auto conv_padding = {pad, pad};
+    auto conv_padding = {1, 1};
 
     vector<float> conv_bias(std::accumulate(conv_bias_tz.begin(),
         conv_bias_tz.end(), 1, std::multiplies<uint32_t>()));

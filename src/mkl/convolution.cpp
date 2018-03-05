@@ -38,21 +38,25 @@ void Convolution( const int batch,
 
     const auto srcformat     = memory::format::nchw;
     const auto weightsformat = memory::format::oihw;
+  //  const auto srcformat     = memory::format::nhwc;
+  //  const auto weightsformat = memory::format::hwio;
 
+    //std::vector<float> net_src(batch * 3 * 227 * 227);
+    //std::vector<float> net_dst(batch * 96 * 27 * 27);
 
     /* AlexNet: conv
      * {batch, 3, 227, 227} (x) {96, 3, 11, 11} -> {batch, 96, 227, 227}
      * strides: {1, 1}
      */
     memory::dims conv_src_tz = {batch, n2, nimage1, nimage2};
+  //  memory::dims conv_src_tz = {batch, nimage1, nimage2, n2};
     memory::dims conv_weights_tz = {n1, n2, nk, nk};
+  //  memory::dims conv_weights_tz = {nk, nk, n1, n2};
     memory::dims conv_bias_tz = {n1};
     memory::dims conv_dst_tz = {batch, n1, nimage1, nimage2};
+ //   memory::dims conv_dst_tz = {batch, nimage1, nimage2, n1};
     memory::dims conv_strides = {1, 1};
-
-  //  auto conv_padding = {1, 1};  // works for 3*3
-    const int pad = (nk-1) / 2;
-    auto conv_padding = {pad, pad};
+    auto conv_padding = {1, 1};
 
     vector<float> conv_bias(std::accumulate(conv_bias_tz.begin(),
         conv_bias_tz.end(), 1, std::multiplies<uint32_t>()));
@@ -142,8 +146,7 @@ void Convolution( const int batch,
 // int main(int argc, char **argv) {
 //     try {
 
-//       //  const int batch = 8, nK=3, nimage=227, n1=96, n2=3;
-//         const int batch = 8, nK=1, nimage=227, n1=96, n2=3;
+//         const int batch = 8, nK=3, nimage=227, n1=96, n2=3;
 
 //         vector<float> net_src(batch * n2 * nimage * nimage);
 //         vector<float> conv_weights(n1 * n2 * nK * nK);

@@ -56,12 +56,10 @@ void ConvolutionT( const int batch,
     memory::dims conv_dst_tz = {batch, n1, nimage1, nimage2};
 
     memory::dims conv_strides = {1, 1};
-  //  auto conv_padding = {1, 1};  // works for 3*3
-    const int pad = (nk-1) / 2;
-    auto conv_padding = {pad, pad};
+    auto conv_padding = {1, 1};
 
-    // vector<float> conv_bias(std::accumulate(conv_bias_tz.begin(),
-    //     conv_bias_tz.end(), 1, std::multiplies<uint32_t>()));
+    vector<float> conv_bias(std::accumulate(conv_bias_tz.begin(),
+        conv_bias_tz.end(), 1, std::multiplies<uint32_t>()));
 
     /* create memory for user data */
     auto conv_user_src_memory = memory({{{conv_src_tz}, memory::data_type::f32,
@@ -69,9 +67,9 @@ void ConvolutionT( const int batch,
     auto conv_user_weights_memory = memory({{{conv_weights_tz},
         memory::data_type::f32, weightsformat}, cpu_engine},
         conv_weights);
-    // auto conv_user_bias_memory = memory({{{conv_bias_tz},
-    //     memory::data_type::f32, memory::format::x}, cpu_engine},
-    //     conv_bias.data());
+    auto conv_user_bias_memory = memory({{{conv_bias_tz},
+        memory::data_type::f32, memory::format::x}, cpu_engine},
+        conv_bias.data());
 
     /* create memory descriptors for convolution data w/ no specified format */
     auto conv_src_md_f = memory::desc({conv_src_tz_f}, memory::data_type::f32,
@@ -163,26 +161,26 @@ void ConvolutionT( const int batch,
 }  // extern "C"
 
 
-//  int main(int argc, char **argv) {
-//      try {
+ int main(int argc, char **argv) {
+     try {
 
-//          //const int batch = 8, nK=3, nimage=227, n1=96, n2=3;
-//          const int batch = 8, nK=3, nimage=50, n1=16, n2=32;
+         //const int batch = 8, nK=3, nimage=227, n1=96, n2=3;
+         const int batch = 8, nK=3, nimage=50, n1=16, n2=32;
 
-//          vector<float> net_src(batch * n2 * nimage * nimage, 2.f);
-//          vector<float> conv_weights(n1 * n2 * nK * nK, 4.f);
-//          vector<float> net_dst(batch * n1 * nimage * nimage, 3.f);
+         vector<float> net_src(batch * n2 * nimage * nimage, 2.f);
+         vector<float> conv_weights(n1 * n2 * nK * nK, 4.f);
+         vector<float> net_dst(batch * n1 * nimage * nimage, 3.f);
 
-//          cout << net_src[2] << " " << conv_weights[2] << " "  << net_dst[2] << " "  << endl;
+         cout << net_src[2] << " " << conv_weights[2] << " "  << net_dst[2] << " "  << endl;
 
-//          ConvolutionT( batch, nK, nimage,nimage, n1, n2, net_src.data(), conv_weights.data(), net_dst.data() );
+         ConvolutionT( batch, nK, nimage,nimage, n1, n2, net_src.data(), conv_weights.data(), net_dst.data() );
 
-//          cout << net_src[2] << " " << conv_weights[2] << " "  << net_dst[2] << " "  << endl;
+         cout << net_src[2] << " " << conv_weights[2] << " "  << net_dst[2] << " "  << endl;
 
-//      }
-//      catch(error& e) {
-//          std::cerr << "status: " << e.status << std::endl;
-//          std::cerr << "message: " << e.message << std::endl;
-//      }
-//      return 0;
-//  }
+     }
+     catch(error& e) {
+         std::cerr << "status: " << e.status << std::endl;
+         std::cerr << "message: " << e.message << std::endl;
+     }
+     return 0;
+ }
