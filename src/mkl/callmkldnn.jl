@@ -1,7 +1,12 @@
 
+# export MKLDNNROOT=/home/shekht/dnn/install
+# export LD_LIBRARY_PATH=/home/shekht/dnn/install/lib
+
 # To compile the code:
 # g++ -std=c++11 -I${MKLDNNROOT}/include -L${MKLDNNROOT}/lib convolution.cpp convolutionT.cpp convolutionDeriv.cpp  -lmkldnn -lmklml_intel -liomp5 -O -fPIC -shared -o mkldnn.so
-const mkldnnpath = Pkg.dir("Meganet")*"/src/mkl/mkldnn.so"
+
+
+const mkldnnpath = "/home/shekht/xt/juliainterface/mkldnn.so"
 
 function convMKL( K::Array{Float32,4}, Y::Array{Float32,4} )
    # Convoltion time vector
@@ -13,7 +18,8 @@ function convMKL( K::Array{Float32,4}, Y::Array{Float32,4} )
    nk, nk,  n2, n1 = size(K)
    nimage2, nimage1, n2_2, batch = size(Y)
    
-   if nk != 3 ; error("nk != 3") ; end
+   # if nk != 3 ; error("nk != 3") ; end
+   if nk%2 == 0 ; error("nk must be odd") ; end
    if n2 != n2_2 ; error("n2 != n2_2") ; end
    
    AY = Array{Float32}(nimage2, nimage1, n1, batch)
@@ -37,7 +43,7 @@ function convTMKL( K::Array{Float32,4}, Y::Array{Float32,4} )
    nk, nk,  n2, n1 = size(K)
    nimage2, nimage1, n1_2, batch = size(Y)
    
-   if nk != 3 ; error("nk != 3") ; end
+   if nk%2 == 0 ; error("nk must be odd") ; end
    if n1 != n1_2 ; error("n1 != n1_2") ; end
    
    
@@ -52,17 +58,17 @@ end  # function convTMKL
 
 #----------------------------------------------------------------------------------
 
-function convDerivMKL( sK::Array{Float32}, Z::Array{Float32,4}, Y::Array{Float32,4} )
+function convDerivMKL( sK::Array{Int}, Z::Array{Float32,4}, Y::Array{Float32,4} )
    # Z should be nimage2, nimage1, n1, batch
    # Y should be nimage2, nimage1, n2, batch
    # Output is  nk, nk,  n2, n1
    
-   nk, nk,  n2, n1 = size(sK)
+   nk, nk,  n2, n1 = sK
    
    nimage2, nimage1, n2_2, batch = size(Y)
    nimage2, nimage1, n1_2, batch = size(Z)
    
-   if nk != 3 ; error("nk != 3") ; end
+   if nk%2 == 0 ; error("nk must be odd") ; end
    if n1 != n1_2 || n2 != n2_2 ; error("n1 != n1_2 || n2 != n2_2") ; end
    
    ADY = Array{Float32}(nk, nk,  n2, n1)

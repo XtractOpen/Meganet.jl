@@ -1,6 +1,6 @@
 export Connector,getConnector
 
-mutable struct Connector{T,TQ <: Union{Array{T,2},UniformScaling{Int}}, TK <: Union{Array{T,2},SparseMatrixCSC{T,Int}}} <: AbstractMeganetElement{T}
+mutable struct Connector{T,TQ <: Union{Array{T,2},UniformScaling{Int}}, TK <: Union{Function, Array{T,2},SparseMatrixCSC{T,Int}}} <: AbstractMeganetElement{T}
     K::TK
     b::T
     outTimes::Int
@@ -17,6 +17,27 @@ function getConnector(TYPE::Type, K; b = zero(TYPE),outTimes=0,Q=I)
 	return Connector(K,b,outTimes,Q);
 end
 
+function apply(this::Connector{T,<:Any,<:Function},theta::Array{T},Y0::Array{T},tmp,doDerivative=true) where {T <: Number}
+    nex = div(length(Y0),nFeatIn(this))
+    Y0  = reshape(Y0,:,nex)
+
+    if doDerivative
+        if isempty(tmp)
+            tmp = copy(Y0)
+        else
+            tmp .= Y0
+        end
+    end
+
+    Y = this.K(Y0) .+ this.b
+
+    Ydata::Array{T,2} = Array{T, 2}(0, 0) # Temporary fix until we know what type Q is
+    if this.outTimes==1
+        Ydata = this.Q*Y
+    end
+
+    return Ydata, Y, tmp, this.K*Y0
+end
 function apply(this::Connector{T},theta::Array{T},Y0::Array{T},tmp,doDerivative=true) where {T <: Number}
     nex = div(length(Y0),nFeatIn(this))
     Y0  = reshape(Y0,:,nex)
@@ -30,12 +51,13 @@ function apply(this::Connector{T},theta::Array{T},Y0::Array{T},tmp,doDerivative=
     end
 
     Y = this.K*Y0 .+ this.b
+
     Ydata::Array{T,2} = Array{T, 2}(0, 0) # Temporary fix until we know what type Q is
     if this.outTimes==1
         Ydata = this.Q*Y
     end
 
-    return Ydata, Y, tmp
+    return Ydata, Y, tmp, this.K*Y0
 end
 
 function Jmv(this::Connector{T},dtheta::Array{T},dY::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
