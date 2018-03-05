@@ -1,3 +1,4 @@
+export jumping_average, jumping_averageT
 
 function numel(Y)
     return length(Y)
@@ -89,4 +90,65 @@ function Base.mean!(f::Function, r::AbstractArray{T}, a::AbstractArray) where {T
     x .= x .* n
 
     return x
+end
+
+"""
+    jumping_average(Y::Array{T,2}, jump::Int) where {T<:Number}
+
+For each column in `Y`, take the mean of `jump` elements at a time.
+
+# Example
+
+"""
+function jumping_average(Y0::Array{T,2}, jump::Int) where {T<:Number}
+    nf, nex = size(Y0)
+    (nf%jump != 0) && error("Columns of Y0 are not divisible by jump length")
+    m = div(nf, jump)
+    out = Array{T,2}(m, nex)
+
+    for j in 1:nex
+        for i in 1:m
+            # Cartesian Range is used to create non-allocating views of the array
+           @inbounds  out[i,j] = rangesum(Y0, CartesianRange(CartesianIndex(((i-1)*jump+1,j)), CartesianIndex(i*jump,j))) /jump
+        end
+    end
+
+    return out
+end
+
+@inline function rangesum(A::Array{T,2}, R) where {T<:Number}
+    s = zero(T)
+    @simd for I in R
+        @inbounds s += A[I]
+    end
+    return s
+end
+
+"""
+    jumping_averageT(W::Array{T,2}, jump::Int) where {T<:Number}
+
+Adjoint of `jumping_average` where `W` is the output of `jumping_average(Y, jump)`.
+"""
+function jumping_averageT(W::Array{T,2}, jump::Int, scale::Bool = false) where {T<:Number}
+    m, nex = size(W)
+    out = Array{T,2}(m*jump, nex)
+    fact = 1//jump
+
+    if scale
+        for i in 1:nex
+            @simd for j in 1:m
+                @inbounds tmp = W[j, i] .* fact
+                @inbounds out[(jump*(j-1)+1 : jump*j), i] .= tmp
+            end
+        end
+    else
+        for i in 1:nex
+            @simd for j in 1:m
+                @inbounds tmp = W[j, i]
+                @inbounds out[(jump*(j-1)+1 : jump*j), i] .= tmp
+            end
+        end
+    end
+
+    return out
 end

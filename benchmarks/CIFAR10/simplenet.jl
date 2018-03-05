@@ -23,8 +23,12 @@ layer = getSingleLayer(TYPE, k, nl)
 blocks = [layer]
 
 # Connector
-B      = kron(speye(TYPE,16),ones(TYPE, prod(nImg)))/prod(nImg);
-blocks = [blocks; getConnector(TYPE, B')]
+# B      = kron(speye(TYPE,16),ones(TYPE, prod(nImg)))/prod(nImg);
+# blocks = [blocks; getConnector(TYPE, B')]
+ blocks = [blocks; getConnector(TYPE, Y -> jumping_average(Y, prod(nImg)),
+                                      W -> jumping_averageT(W, prod(nImg)),
+                                      16*prod(nImg),
+                                      16)]
 blocks[end].outTimes=1
 
 # Build Network
