@@ -55,8 +55,12 @@ for k=1:length(nt)
 end
 
 # Connector block
-B      = kron(speye(TYPE,nc[end]),ones(TYPE, prod(nImg)))/prod(nImg);
-blocks = [blocks; getConnector(TYPE,B')];
+#B      = kron(speye(TYPE,nc[end]),ones(TYPE, prod(nImg)))/prod(nImg);
+#blocks = [blocks; getConnector(TYPE,B')];
+blocks = [blocks; getConnector(TYPE, Y -> jumping_average(Y, prod(nImg)),
+                                     W -> jumping_averageT(W, prod(nImg)),
+                                     nc[end]*prod(nImg),
+                                     nc[end])]
 blocks[end].outTimes=1
 
 net = getNN(blocks)

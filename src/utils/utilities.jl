@@ -129,7 +129,7 @@ end
 
 Adjoint of `jumping_average` where `W` is the output of `jumping_average(Y, jump)`.
 """
-function jumping_averageT(W::Array{T,2}, jump::Int, scale::Bool = false) where {T<:Number}
+function jumping_averageT(W::Array{T,2}, jump::Int, scale::Bool = true) where {T<:Number}
     m, nex = size(W)
     out = Array{T,2}(m*jump, nex)
     fact = 1//jump

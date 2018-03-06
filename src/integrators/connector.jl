@@ -107,7 +107,7 @@ function JTmv(this::Connector{T, <:Any, <:Any},Wdata::Array{T},Win::Array{T},the
     dtheta = zeros(T,0);
     Wout   = this.K'*W;
 
-    return dtheta,W
+    return dtheta,Wout
 end
 
 function JTmv(this::Connector{T, <:Any, <:Function},Wdata::Array{T},Win::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
