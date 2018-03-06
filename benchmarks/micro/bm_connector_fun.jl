@@ -52,5 +52,5 @@ t2  = @benchmark test2($Y0, $(prod(nImg)))
 tT1 = @benchmark testT1($con, $W)
 tT2 = @benchmark testT2($W, $(prod(nImg)), true)
 
-j  = judge(minimum(tT2), minimum(tT1))
+j  = judge(minimum(t2), minimum(t1))
 jT = judge(minimum(tT2), minimum(tT1))
