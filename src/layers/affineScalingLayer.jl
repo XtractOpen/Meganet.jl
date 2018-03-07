@@ -10,21 +10,21 @@ kron(e3,kron(b2,e1)) + kron(e3,kron(e2,b1));
 mutable struct AffineScalingLayer{T} <: AbstractMeganetElement{T}
     nData  :: Array{Int,1}     # describe size of data, at least first two dim must be correct.
 end
-function getAffineScalingLayer(TYPE::Type, nData)
+@inline function getAffineScalingLayer(TYPE::Type, nData)
     return AffineScalingLayer{TYPE}(nData)
 end
 
-function splitWeights(this::AffineScalingLayer{T},theta_in::Array{T}) where {T <: Number}
+@inline function splitWeights(this::AffineScalingLayer{T},theta_in::Array{T}) where {T <: Number}
     theta = reshape(theta_in,:,2)
     s2    = theta[:,1]
     b2    = theta[:,2]
     return s2, b2
 end
 
-function scaleChannels!(Y::Array{T},s::Array{T},b::Array{T}) where {T <: Number}
-    for i=1:length(s)
-        Y[:,i,:] .= Y[:,i,:].*s[i] .+ b[i]
-    end
+@inline function scaleChannels!(Y::Array{T},sin::Array{T},bin::Array{T}) where {T <: Number}
+    s = reshape(sin, 1, :, 1)
+    b = reshape(bin, 1, :, 1)
+    Y .= Y .* s .+ b
 end
 
 function apply(this::AffineScalingLayer{T},theta::Array{T},Yin::Array{T},dA,doDerivative=false) where {T <: Number}
@@ -35,10 +35,7 @@ function apply(this::AffineScalingLayer{T},theta::Array{T},Yin::Array{T},dA,doDe
 
     s2,b2 = splitWeights(this,theta);
 
-    s = reshape(s2, 1, :, 1)
-    b = reshape(b2, 1, :, 1)
-    # scaleChannels!(Y,s2,b2);
-    Y .= Y .* s .+ b
+    scaleChannels!(Y,s2,b2);
 
     Yout = reshape(Y,:,nex)
     Ydata = Yout
