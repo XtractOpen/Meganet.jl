@@ -76,9 +76,14 @@ function apply(this::batchNormNN{T},theta::Array{T},Y::Array{T,2},tmp::Array,doD
         ni = nTheta(this.layers[i])::Int
 
         Yd::Array{T,2}, Y, tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
-        # if this.outTimes[i]==1
-            # Ydata = [Ydata; this.Q*Yd]
-        # end
+        if this.outTimes[i]==1
+            if typeof(this.Q) <: UniformScaling
+                Ydata = Yd # no-op
+            else
+                Ydata = [Ydata; this.Q*Yd]
+            end
+        end
+
         if doDerivative
             if isassigned(tmp,i+1,1)
                 tmp1 = tmp[i+1,1]
@@ -90,7 +95,7 @@ function apply(this::batchNormNN{T},theta::Array{T},Y::Array{T,2},tmp::Array,doD
         cnt = cnt + ni
     end
 
-    return Y,Y,tmp
+    return Ydata,Y,tmp
 end
 
 # -------- Jacobian matvecs --------

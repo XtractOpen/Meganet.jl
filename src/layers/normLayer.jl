@@ -125,7 +125,6 @@ function JYTmv(this::normLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T},
     # Can overwrite Zin
     nex = div(length(Yin),nFeatIn(this))
     nf  = this.nData[2]
-
     Zout   = reshape(Zin,:,nf,nex)
     Y   = reshape(Yin,:,nf,nex)
 
@@ -135,13 +134,14 @@ function JYTmv(this::normLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T},
     Zout .= Zout .- m
     mean!(x -> x^2, m, Yout)
     den = sqrt.(m .+ this.eps)
-
     tmp = mean(Yout.*Zout,this.doNorm)
-    Zout ./= den
-    Yout .*= tmp ./ den.^3
 
-    # dY = Zout .- Yout
-    Zout .= Zout .- Yout
+    # Combine into one broadcast
+    # Zout .= Zout ./ den
+    # Yout .= Yout .* tmp ./ den.^3
+    # Zout .= Zout .- Yout <-- dY = Zout .- Yout
+    Zout .= Zout./den .- Yout.*tmp./den.^3
+
     mean!(m, Zout)
     Zout .= Zout .- m
     return reshape(Zout,:,nex)

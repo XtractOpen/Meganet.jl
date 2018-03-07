@@ -98,8 +98,8 @@ function JYmv(this::AffineScalingLayer{T},dY::Array{T},theta::Array{T},Y::Array{
     return dYdata, dY
 end
 
-function JYTmv(this::AffineScalingLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
-    Z   = reshape(copy(Z),this.nData[1], this.nData[2],:)
+function JYTmv(this::AffineScalingLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T},Y::Array{T},tmp=nothing) where {T <: Number}
+    Z   = reshape(Zin,this.nData[1], this.nData[2],:)
     nex = size(Z,3)
 
     s2,b2 = splitWeights(this,theta)
