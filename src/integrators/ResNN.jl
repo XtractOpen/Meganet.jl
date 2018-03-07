@@ -74,7 +74,11 @@ function  apply(this::ResNN{T},theta_in::Array{T},Y0::Array{T},tmp,doDerivative=
             tmp[i,2] = Array{Any}(0)
         end
         Z,dummy,tmp[i,2] = apply(this.layer,theta[:,i],Y,tmp[i,2],doDerivative)
-        Y .= Y .+ this.h * Z
+
+        # Inplace method fails objFun tests
+        # Y .= Y .+ Z .* this.h
+        Y +=  this.h * Z
+
         if this.outTimes[i]==1
             Ydata = [Ydata;this.Q*Y]
         end
