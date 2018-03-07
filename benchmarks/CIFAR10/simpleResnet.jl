@@ -71,7 +71,7 @@ opt     = getSGDsolver(TYPE,learningRate=1e-2,
                             out=true,
                             nesterov=true)
 
-if true
+if false
     Profile.clear()
     Profile.init(n = 10000000)
     @profile solve(opt, objFun, [vec(theta); vec(W)], Y_train, C_train, Y_test, C_test)

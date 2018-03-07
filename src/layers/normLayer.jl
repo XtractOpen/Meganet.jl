@@ -122,25 +122,27 @@ function JthetaTmv(this::normLayer{T},Z::Array{T},dummy::Array{T},theta::Array{T
 end
 
 function JYTmv(this::normLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T},Yin::Array{T},dA=nothing) where {T <: Number}
+    # Can overwrite Zin
     nex = div(length(Yin),nFeatIn(this))
     nf  = this.nData[2]
 
-    Z   = reshape(Zin,:,nf,nex)
-    Y    = reshape(Yin,:,nf,nex)
+    Zout   = reshape(Zin,:,nf,nex)
+    Y   = reshape(Yin,:,nf,nex)
 
     m = mean(Y, this.doNorm)
     Yout  = Y .- m
-    mean!(m, Z)
-    Zout  = Z .- m
+    mean!(m, Zout)
+    Zout .= Zout .- m
     mean!(x -> x^2, m, Yout)
     den = sqrt.(m .+ this.eps)
 
     tmp = mean(Yout.*Zout,this.doNorm)
     Zout ./= den
     Yout .*= tmp ./ den.^3
-    # Yout ./= den.^3 # TODO: look into doing both this division and multiplication above at same time
-    dY = Zout .- Yout
-    mean!(m, dY)
-    dY .-= m
-    return reshape(dY,:,nex)
+
+    # dY = Zout .- Yout
+    Zout .= Zout .- Yout
+    mean!(m, Zout)
+    Zout .= Zout .- m
+    return reshape(Zout,:,nex)
 end
