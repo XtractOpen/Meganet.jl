@@ -15,7 +15,7 @@ function getBatchNormLayer(TYPE::Type, nData; eps = convert(TYPE,1e-3),isTrainab
 
     L =  normLayer{TYPE}(nData,3,eps)
     if isTrainable
-        SL = AffineScalingLayer{TYPE}(nData)        
+        SL = AffineScalingLayer{TYPE}(nData)
         temp_var = getbatchNormNN((L,SL))
         return temp_var
     else
@@ -128,19 +128,19 @@ function JYTmv(this::normLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T},
     Z   = reshape(Zin,:,nf,nex)
     Y    = reshape(Yin,:,nf,nex)
 
-    Ya = mean(Y,this.doNorm)
-    Yout  = Y .- Ya
-    Za = mean(Z,this.doNorm)
-    Zout  = Z .- Za
-    S2y = mean(Yout.^2,this.doNorm)
-    den = sqrt.(S2y+this.eps)
+    m = mean(Y, this.doNorm)
+    Yout  = Y .- m
+    mean!(m, Z)
+    Zout  = Z .- m
+    mean!(x -> x^2, m, Yout)
+    den = sqrt.(m .+ this.eps)
 
     tmp = mean(Yout.*Zout,this.doNorm)
     Zout ./= den
-    Yout .*= tmp
-    Yout ./= den.^3 # TODO: look into doing both this division and multiplication above at same time
-    dY = Zout-Yout
-    dYa = mean(dY,this.doNorm)
-    dY .-= dYa
+    Yout .*= tmp ./ den.^3
+    # Yout ./= den.^3 # TODO: look into doing both this division and multiplication above at same time
+    dY = Zout .- Yout
+    mean!(m, dY)
+    dY .-= m
     return reshape(dY,:,nex)
 end
