@@ -5,7 +5,7 @@ batchNormNN Neural Network block
 
  Y_k+1 = layer{k}(theta{k},Y_k)
 """
-#TODO: Can probably optimize some functions using the knowledge that we only have a norm and an AFS layer. 
+#TODO: Can probably optimize some functions using the knowledge that we only have a norm and an AFS layer.
 mutable struct batchNormNN{T,TQ <: Union{Array{T,2},UniformScaling{Int}}} <: AbstractMeganetElement{T}
     layers   ::Tuple{normLayer{T}, AffineScalingLayer{T}}
     outTimes ::Array{Int,1}
@@ -76,9 +76,9 @@ function apply(this::batchNormNN{T},theta::Array{T},Y::Array{T,2},tmp::Array,doD
         ni = nTheta(this.layers[i])::Int
 
         Yd::Array{T,2}, Y, tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
-        if this.outTimes[i]==1
-            Ydata = [Ydata; this.Q*Yd]
-        end
+        # if this.outTimes[i]==1
+            # Ydata = [Ydata; this.Q*Yd]
+        # end
         if doDerivative
             if isassigned(tmp,i+1,1)
                 tmp1 = tmp[i+1,1]
@@ -90,7 +90,7 @@ function apply(this::batchNormNN{T},theta::Array{T},Y::Array{T,2},tmp::Array,doD
         cnt = cnt + ni
     end
 
-    return Ydata,Y,tmp
+    return Y,Y,tmp
 end
 
 # -------- Jacobian matvecs --------
@@ -168,7 +168,7 @@ end
 
 
 function JTmv(this::batchNormNN,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
-    
+
     nex = div(length(Y),nFeatIn(this))
 
     if size(Wdata,1)>0
@@ -190,7 +190,7 @@ function JTmv(this::batchNormNN,Wdata::Array{T},W::Array{T},theta::Array{T},Y::A
             W += this.Q'*Wdata[end-cnt2-nn+1:end-cnt2,:]
             cnt2 = cnt2 + nn
         end
-        
+
         ni     = nTheta(this.layers[i])
 
         dmbi,W = JTmv(this.layers[i],W,zeros(T,0),theta[end-cnt-ni+1:end-cnt],tmp[i,1],tmp[i,2])

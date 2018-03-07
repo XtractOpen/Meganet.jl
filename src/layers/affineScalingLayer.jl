@@ -23,19 +23,22 @@ end
 
 function scaleChannels!(Y::Array{T},s::Array{T},b::Array{T}) where {T <: Number}
     for i=1:length(s)
-        Y[:,i,:] .= Y[:,i,:].*s[i] .+ b[i] 
+        Y[:,i,:] .= Y[:,i,:].*s[i] .+ b[i]
     end
 end
 
-function apply(this::AffineScalingLayer{T},theta::Array{T},Y::Array{T},dA,doDerivative=false) where {T <: Number}
+function apply(this::AffineScalingLayer{T},theta::Array{T},Yin::Array{T},dA,doDerivative=false) where {T <: Number}
 
-    Y   = reshape(copy(Y),this.nData[1], this.nData[2],:)
+    Y   = reshape(Yin,this.nData[1], this.nData[2],:)
     dA  = Array{T,2}(0,0)
     nex = size(Y,3)
 
     s2,b2 = splitWeights(this,theta);
 
-    scaleChannels!(Y,s2,b2);
+    s = reshape(s2, 1, :, 1)
+    b = reshape(b2, 1, :, 1)
+    # scaleChannels!(Y,s2,b2);
+    Y .= Y .* s .+ b
 
     Yout = reshape(Y,:,nex)
     Ydata = Yout
