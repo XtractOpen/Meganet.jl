@@ -254,7 +254,7 @@ function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
     A,dAZ1 = this.activation!(KY, similar(KY), true)
     dth3 = vec(sum(this.Bout'*Z,2))
     KopZ = Amv(this.K, th1, Z)
-    dAZ1 .= dAZ1 .* KopZ # Should be able to do this in place, but it changes the result
+    dAZ1 .= dAZ1 .* KopZ 
 
     dth2       = vec(sum(this.Bin'*dAZ1,2))
     dth4, dAZ2 = JTmv(this.nLayer,dAZ1,zeros(T,0),th4,tmp,tmpNL)
