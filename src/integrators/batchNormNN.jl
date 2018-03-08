@@ -192,12 +192,15 @@ function JTmv(this::batchNormNN,Wdata::Array{T},W::Array{T},theta::Array{T},Y::A
     for i=nt:-1:1
         if this.outTimes[i]==1
             nn = nFeatOut(this.layers[i])
-            W += this.Q'*Wdata[end-cnt2-nn+1:end-cnt2,:]
+            if typeof(this.Q) <: UniformScaling
+                @inbounds W .= W .+ Wdata[end-cnt2-nn+1:end-cnt2,:]
+            else
+                @inbounds W .= W .+ this.Q'*Wdata[end-cnt2-nn+1:end-cnt2,:]
+            end
             cnt2 = cnt2 + nn
         end
 
         ni     = nTheta(this.layers[i])
-
         dmbi,W = JTmv(this.layers[i],W,zeros(T,0),theta[end-cnt-ni+1:end-cnt],tmp[i,1],tmp[i,2])
         dtheta[end-cnt-ni+1:end-cnt]  = dmbi
         cnt = cnt+ni
