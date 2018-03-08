@@ -146,25 +146,23 @@ function JTmv(this::singleLayer{T},Zin::Array{T},dummy::Array{T},theta::Array{T}
     nex  = div(length(Y),nFeatIn(this))
     Z    = reshape(Zin,:,nex)
     th1,th2,th3,th4  = splitWeights(this,theta)
-    Kop = getOp(this.K,th1)
 
 	# re-compute derivative of activation
 	Yout              = copy(tmp);
     Yout,dummy,tmpNL  = apply(this.nLayer,th4,Yout,[])
-    Yout .+= this.Bin * th2
-	A,dA   = this.activation(Yout,true)
+    Yout .= Yout .+ (this.Bin * th2)
 
+    # This is filling the data matrix with the derivative
+	_, dA   = this.activation!(Yout, Yout, true)
 
     dth3      = vec(sum(this.Bout'*Z,2))
     dA       .= dA .* Z
-    dAZ       = dA
-    dth2      = vec(sum(this.Bin'*reshape(dAZ,:,nex),2))
+    dth2      = vec(sum(this.Bin'*reshape(dA,:,nex),2))
+	dth4,dA  = JTmv(this.nLayer,dA,zeros(T,0),th4,tmp,tmpNL) # this not type stable
+    dth1      = JthetaTmv(this.K, dA,th1,Y) # this not type stable
 
-	dth4,dAZ  = JTmv(this.nLayer,dAZ,zeros(T,0),th4,tmp,tmpNL) # this not type stable
-    dth1      = JthetaTmv(this.K, dAZ,th1,Y) # this not type stable
-
-    dY   = Kop'*reshape(dAZ,:,nex)
-    dtheta = [vec(dth1); vec(dth2); vec(dth3); vec(dth4)]
+    dY = ATmv(this.K, th1, reshape(dA,:,nex))
+    dtheta = vcat(vec(dth1), vec(dth2), vec(dth3), vec(dth4))
 
     return dtheta, dY
 

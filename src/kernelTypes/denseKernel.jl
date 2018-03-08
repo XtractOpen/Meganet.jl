@@ -28,6 +28,18 @@ function getOp(kernel::DenseKernel{T},theta::Array{T}) where {T<:Number}
     return reshape(theta,kernel.nK[1],kernel.nK[2])
 end
 
+function Amv(this::DenseKernel, theta::Array{T}, Y::Array{T}) where {T<:Number}
+    K = getOp(this, theta)
+    AY = K * Y
+    return AY
+end
+
+function ATmv(this::DenseKernel, theta::Array{T}, Y::Array{T}) where {T<:Number}
+    K = getOp(this, theta)
+    AY = K' * Y
+    return AY
+end
+
 function Jthetamv(kernel::DenseKernel{T},dtheta::Array{T},theta::Array{T},Yin::Array{T},tmp=nothing) where {T<:Number}
     nex    =  div(length(Yin),nFeatIn(kernel))
     Y      = reshape(Yin,:,nex)
