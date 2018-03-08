@@ -5,7 +5,7 @@ batchNormNN Neural Network block
 
  Y_k+1 = layer{k}(theta{k},Y_k)
 """
-#TODO: Can probably optimize some functions using the knowledge that we only have a norm and an AFS layer. 
+#TODO: Can probably optimize some functions using the knowledge that we only have a norm and an AFS layer.
 mutable struct batchNormNN{T,TQ <: Union{Array{T,2},UniformScaling{Int}}} <: AbstractMeganetElement{T}
     layers   ::Tuple{normLayer{T}, AffineScalingLayer{T}}
     outTimes ::Array{Int,1}
@@ -77,8 +77,13 @@ function apply(this::batchNormNN{T},theta::Array{T},Y::Array{T,2},tmp::Array,doD
 
         Yd::Array{T,2}, Y, tmp[i,2] = apply(this.layers[i],theta[cnt+(1:ni)],Y,doDerivative)
         if this.outTimes[i]==1
-            Ydata = [Ydata; this.Q*Yd]
+            if typeof(this.Q) <: UniformScaling
+                Ydata = Yd # no-op
+            else
+                Ydata = [Ydata; this.Q*Yd]
+            end
         end
+
         if doDerivative
             if isassigned(tmp,i+1,1)
                 tmp1 = tmp[i+1,1]
@@ -168,7 +173,7 @@ end
 
 
 function JTmv(this::batchNormNN,Wdata::Array{T},W::Array{T},theta::Array{T},Y::Array{T},tmp) where {T <: Number}
-    
+
     nex = div(length(Y),nFeatIn(this))
 
     if size(Wdata,1)>0
@@ -187,12 +192,15 @@ function JTmv(this::batchNormNN,Wdata::Array{T},W::Array{T},theta::Array{T},Y::A
     for i=nt:-1:1
         if this.outTimes[i]==1
             nn = nFeatOut(this.layers[i])
-            W += this.Q'*Wdata[end-cnt2-nn+1:end-cnt2,:]
+            if typeof(this.Q) <: UniformScaling
+                @inbounds W .= W .+ Wdata[end-cnt2-nn+1:end-cnt2,:]
+            else
+                @inbounds W .= W .+ this.Q'*Wdata[end-cnt2-nn+1:end-cnt2,:]
+            end
             cnt2 = cnt2 + nn
         end
-        
-        ni     = nTheta(this.layers[i])
 
+        ni     = nTheta(this.layers[i])
         dmbi,W = JTmv(this.layers[i],W,zeros(T,0),theta[end-cnt-ni+1:end-cnt],tmp[i,1],tmp[i,2])
         dtheta[end-cnt-ni+1:end-cnt]  = dmbi
         cnt = cnt+ni
