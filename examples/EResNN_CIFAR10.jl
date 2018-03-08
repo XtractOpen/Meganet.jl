@@ -82,7 +82,7 @@ W = max.(W,-.2);
 W = convert(Array{TYPE},W);
 
 solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
-opt = getSGDsolver(TYPE,learningRate=1e-2,maxEpochs=10,miniBatch=miniBatchSize,out=true, nesterov=true)
+opt.maxEpochs = 10
 @time solve(opt,objFun::dnnObjFctn,[vec(theta);vec(W)],Y_train,C_train,Y_test,C_test)
 
 # Profile.clear()
