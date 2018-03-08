@@ -245,17 +245,16 @@ function JTmv(this::DoubleSymLayer{T}, Zin::Array{T}, dummy::Array{T},
     #Kop       = getOp(this.K,th1)
 
 	# re-compute derivative of activation
-	K1              = copy(tmp);
-    KY,dummy,tmpNL  = apply(this.nLayer,th4,K1,[],true)
+	KY              = copy(tmp);
+    KY,dummy,tmpNL  = apply(this.nLayer,th4,KY,[],true)
     if !isempty(th2)
      KY .+= this.Bin*th2
     end
 
-    A,dA = this.activation!(KY, K1, true)
+    A,dAZ1 = this.activation!(KY, similar(KY), true)
     dth3 = vec(sum(this.Bout'*Z,2))
-
     KopZ = Amv(this.K, th1, Z)
-    dAZ1 = dA .* KopZ # Should be able to do this in place, but it changes the result
+    dAZ1 .= dAZ1 .* KopZ # Should be able to do this in place, but it changes the result
 
     dth2       = vec(sum(this.Bin'*dAZ1,2))
     dth4, dAZ2 = JTmv(this.nLayer,dAZ1,zeros(T,0),th4,tmp,tmpNL)
